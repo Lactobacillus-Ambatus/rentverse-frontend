@@ -2,10 +2,14 @@ import Image from 'next/image'
 import TextAction from '@/components/TextAction'
 import LanguageSelector from '@/components/LanguageSelector'
 import SignUpButton from '@/components/SignUpButton'
+import clsx from 'clsx'
 
 function NavBarTop() {
   return (
-    <div className="w-full flex items-center justify-between px-6 py-4 bg-white top-0 list-none border-b border-slate-200">
+    <div className={clsx([
+      'fixed z-50',
+      'w-full flex items-center justify-between px-6 py-4 bg-white top-0 list-none border-b border-slate-200'
+    ])}>
       <Image
         src='/logo-nav.png'
         alt='Logo Rentverse'
