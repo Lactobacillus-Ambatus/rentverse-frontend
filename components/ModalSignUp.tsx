@@ -2,13 +2,13 @@
 
 import React, { ChangeEvent } from 'react'
 import clsx from 'clsx'
-import FilledButton from './FilledButton'
 import { ArrowLeft } from 'lucide-react'
-import InputEmail from './InputEmail'
-import InputName from './InputName'
-import InputDate from './InputDate'
-import InputPassword from './InputPassword'
-import useSignUpStore from '../stores/signUpStore'
+import FilledButton from '@/components/FilledButton'
+import InputEmail from '@/components/InputEmail'
+import InputName from '@/components/InputName'
+import InputDate from '@/components/InputDate'
+import InputPassword from '@/components/InputPassword'
+import useSignUpStore from '@/stores/signUpStore'
 
 interface ModalSignUpProps {
   isModal?: boolean

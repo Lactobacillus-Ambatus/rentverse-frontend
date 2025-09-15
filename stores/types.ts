@@ -40,3 +40,20 @@ export interface SignUpActions {
 }
 
 export type SignUpStore = SignUpState & SignUpActions
+
+export interface LogInState {
+  password: string
+  isLoading: boolean
+  error: string | null
+}
+
+export interface LogInActions {
+  setPassword: (password: string) => void
+  setLoading: (loading: boolean) => void
+  setError: (error: string | null) => void
+  isFormValid: () => boolean
+  resetState: () => void
+  submitLogIn: () => Promise<void>
+}
+
+export type LogInStore = LogInState & LogInActions

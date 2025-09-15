@@ -3,6 +3,7 @@ import Footer from '@/components/Footer'
 import ContentWrapper from '@/components/ContentWrapper'
 import ModalEmailCheck from '@/components/ModalEmailCheck'
 import ModalSignUp from '@/components/ModalSignUp'
+import ModalLogIn from '@/components/ModalLogIn'
 
 export default function Home() {
   return (
@@ -10,7 +11,8 @@ export default function Home() {
       <NavBar />
       <ContentWrapper>
         {/*<ModalEmailCheck isModal={false}/>*/}
-        <ModalSignUp isModal={false}/>
+        {/*<ModalSignUp isModal={false}/>*/}
+        <ModalLogIn isModal={false}/>
       </ContentWrapper>
       <Footer/>
     </div>
