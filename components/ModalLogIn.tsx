@@ -4,8 +4,9 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import React, { ChangeEvent } from 'react'
 import { ArrowLeft } from 'lucide-react'
-import FilledButton from '@/components/FilledButton'
+import BoxError from '@/components/BoxError'
 import InputPassword from '@/components/InputPassword'
+import FilledButton from '@/components/FilledButton'
 import useLogInStore from '@/stores/logInStore'
 
 interface ModalLogInProps {
@@ -43,6 +44,13 @@ function ModalLogIn({ isModal = true }: ModalLogInProps) {
 
       {/* Content */}
       <div className="mb-8">
+        {/* Alert box - only show when there's an error */}
+        {error && (
+          <div className="mb-6">
+            <BoxError errorTitle={'Let\'s try that again'} errorDescription={error} />
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Password Section */}
           <div>
@@ -57,13 +65,6 @@ function ModalLogIn({ isModal = true }: ModalLogInProps) {
               showStrengthIndicator={false}
             />
           </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="text-red-600 text-sm text-center">
-              {error}
-            </div>
-          )}
 
           {/* Submit Button */}
           <FilledButton

@@ -9,6 +9,7 @@ import InputName from '@/components/InputName'
 import InputDate from '@/components/InputDate'
 import InputPassword from '@/components/InputPassword'
 import useSignUpStore from '@/stores/signUpStore'
+import BoxError from '@/components/BoxError'
 
 interface ModalSignUpProps {
   isModal?: boolean
@@ -53,6 +54,13 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
 
       {/* Content */}
       <div className="mb-8">
+        {/* Alert box - only show when there's an error */}
+        {error && (
+          <div className="mb-6">
+            <BoxError errorTitle={'Let\'s try that again'} errorDescription={error} />
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Legal name Section */}
           <div>
@@ -114,13 +122,6 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
               showStrengthIndicator={true}
             />
           </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="text-red-600 text-sm text-center">
-              {error}
-            </div>
-          )}
 
           {/* Terms and Conditions */}
           <div className="text-xs text-slate-600 leading-relaxed">
