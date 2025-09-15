@@ -15,3 +15,28 @@ export interface EmailCheckActions {
 }
 
 export type EmailCheckStore = EmailCheckState & EmailCheckActions
+
+export interface SignUpState {
+  firstName: string
+  lastName: string
+  birthdate: string
+  email: string
+  password: string
+  isLoading: boolean
+  error: string | null
+}
+
+export interface SignUpActions {
+  setFirstName: (firstName: string) => void
+  setLastName: (lastName: string) => void
+  setBirthdate: (birthdate: string) => void
+  setEmail: (email: string) => void
+  setPassword: (password: string) => void
+  setLoading: (loading: boolean) => void
+  setError: (error: string | null) => void
+  isFormValid: () => boolean
+  resetState: () => void
+  submitSignUp: () => Promise<void>
+}
+
+export type SignUpStore = SignUpState & SignUpActions
