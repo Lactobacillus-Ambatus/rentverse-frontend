@@ -1,15 +1,14 @@
 import NavBar from '@/components/NavBar'
 import Footer from '@/components/Footer'
 import ContentWrapper from '@/components/ContentWrapper'
+import ModalEmailCheck from '@/components/ModalEmailCheck'
 
 export default function Home() {
   return (
     <div>
       <NavBar />
       <ContentWrapper>
-        <h1 className="text-lg">
-          Explore thousands of apartments, condominiums, and houses for rent across the country.
-        </h1>
+        <ModalEmailCheck isModal={false}/>
       </ContentWrapper>
       <Footer/>
     </div>
