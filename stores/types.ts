@@ -57,3 +57,34 @@ export interface LogInActions {
 }
 
 export type LogInStore = LogInState & LogInActions
+
+export interface SearchBoxPropertyState {
+  isWhereOpen: boolean
+  isDurationOpen: boolean
+  isTypeOpen: boolean
+  whereValue: string
+  typeValue: string
+  monthCount: number
+  yearCount: number
+}
+
+export interface SearchBoxPropertyActions {
+  setIsWhereOpen: (isOpen: boolean) => void
+  setIsDurationOpen: (isOpen: boolean) => void
+  setIsTypeOpen: (isOpen: boolean) => void
+  setWhereValue: (value: string) => void
+  setTypeValue: (value: string) => void
+  setMonthCount: (count: number) => void
+  setYearCount: (count: number) => void
+  incrementMonth: () => void
+  decrementMonth: () => void
+  incrementYear: () => void
+  decrementYear: () => void
+  getDurationText: () => string
+  getTypeText: () => string
+  handleLocationSelect: (location: { name: string }) => void
+  handleTypeSelect: (type: { name: string }) => void
+  resetState: () => void
+}
+
+export type SearchBoxPropertyStore = SearchBoxPropertyState & SearchBoxPropertyActions
