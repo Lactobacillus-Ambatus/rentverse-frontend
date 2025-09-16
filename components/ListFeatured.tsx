@@ -51,7 +51,7 @@ function ListFeatured() {
   ]
 
   return (
-    <div className="py-16 px-16">
+    <div className="py-16 px-4 md:px-16">
       {/* Section title */}
       <div className="mb-12">
         <h2 className="font-serif text-3xl text-teal-900 mb-4">
@@ -70,7 +70,7 @@ function ListFeatured() {
         breakpoints={{
           // Mobile
           320: {
-            slidesPerView: 1.2,
+            slidesPerView: 1.4,
             spaceBetween: 16,
           },
           // Tablet
