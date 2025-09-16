@@ -5,6 +5,7 @@ import ModalEmailCheck from '@/components/ModalEmailCheck'
 import ModalSignUp from '@/components/ModalSignUp'
 import ModalLogIn from '@/components/ModalLogIn'
 import SearchBoxProperty from '@/components/SearchBoxProperty'
+import ListFeatured from '@/components/ListFeatured'
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
         {/*<ModalSignUp isModal={false}/>*/}
         {/*<ModalLogIn isModal={false}/>*/}
         <SearchBoxProperty/>
+        <ListFeatured/>
       </ContentWrapper>
       <Footer/>
     </div>
