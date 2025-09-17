@@ -1,11 +1,13 @@
 'use client'
 
-import { Search, Plus, Minus } from 'lucide-react'
 import clsx from 'clsx'
+import React from 'react'
 import { useRef, useEffect } from 'react'
-import useSearchBoxPropertyStore from '../stores/searchBoxPropertyStore'
+import { Search, Plus, Minus } from 'lucide-react'
+import { getAllLocations, getAllPropertyTypes } from '@/data/searchbox-options'
+import useSearchBoxPropertyStore from '@/stores/searchBoxPropertyStore'
 
-function SearchBoxProperty() {
+function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.ReactNode {
   const {
     isWhereOpen,
     isDurationOpen,
@@ -30,6 +32,9 @@ function SearchBoxProperty() {
   const whereRef = useRef<HTMLDivElement>(null)
   const durationRef = useRef<HTMLDivElement>(null)
   const typeRef = useRef<HTMLDivElement>(null)
+  const locations = getAllLocations()
+  const propertyTypes = getAllPropertyTypes()
+  const { className, ...propsRest } = props
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -51,106 +56,16 @@ function SearchBoxProperty() {
     }
   }, [setIsWhereOpen, setIsDurationOpen, setIsTypeOpen])
 
-  const locations = [
-    {
-      icon: '🏛️',
-      name: 'George Town, Penang',
-      description: 'UNESCO World Heritage Site with rich culture'
-    },
-    {
-      icon: '🏢',
-      name: 'Kuala Lumpur',
-      description: 'Malaysia\'s bustling capital city'
-    },
-    {
-      icon: '🌴',
-      name: 'Langkawi, Kedah',
-      description: 'Tropical island paradise'
-    },
-    {
-      icon: '🏖️',
-      name: 'Kota Kinabalu, Sabah',
-      description: 'Gateway to Borneo adventures'
-    },
-    {
-      icon: '🏞️',
-      name: 'Cameron Highlands, Pahang',
-      description: 'Cool climate and tea plantations'
-    },
-    {
-      icon: '🕌',
-      name: 'Putrajaya',
-      description: 'Malaysia\'s administrative capital'
-    },
-    {
-      icon: '🏰',
-      name: 'Malacca City, Melaka',
-      description: 'Historic city with colonial architecture'
-    },
-    {
-      icon: '🌊',
-      name: 'Kuching, Sarawak',
-      description: 'Cat city with cultural diversity'
-    },
-    {
-      icon: '🏔️',
-      name: 'Ipoh, Perak',
-      description: 'Limestone caves and heritage buildings'
-    },
-    {
-      icon: '🌺',
-      name: 'Johor Bahru, Johor',
-      description: 'Modern city near Singapore'
-    }
-  ]
-
-  const propertyTypes = [
-    {
-      icon: '🏢',
-      name: 'Property',
-      description: 'All types of properties'
-    },
-    {
-      icon: '🏬',
-      name: 'Condominium',
-      description: 'Modern condo living'
-    },
-    {
-      icon: '🏠',
-      name: 'Apartment',
-      description: 'Urban apartment units'
-    },
-    {
-      icon: '🏡',
-      name: 'House',
-      description: 'Single family homes'
-    },
-    {
-      icon: '🏘️',
-      name: 'Townhouse',
-      description: 'Multi-story attached homes'
-    },
-    {
-      icon: '🏰',
-      name: 'Villa',
-      description: 'Luxury standalone villas'
-    },
-    {
-      icon: '🏙️',
-      name: 'Penthouse',
-      description: 'Top-floor luxury units'
-    }
-  ]
-
   return (
-    <div className="relative">
-      <div className="flex items-center bg-white rounded-full shadow-lg border border-slate-200 p-0 max-w-4xl mx-auto overflow-hidden">
+    <div className={clsx(['relative', className])} {...propsRest}>
+      <div
+        className="flex items-center bg-white rounded-full shadow-lg border border-slate-200 p-0 max-w-4xl mx-auto overflow-hidden">
         {/* Where Section */}
         <div
           className={clsx([
             'flex-1 pl-10 pr-6 py-4 border-r border-slate-200 cursor-pointer',
             'hover:bg-slate-50',
-            isWhereOpen && 'bg-slate-50'
+            isWhereOpen && 'bg-slate-50',
           ])}
           onClick={() => setIsWhereOpen(true)}
         >
@@ -170,7 +85,7 @@ function SearchBoxProperty() {
           className={clsx([
             'flex-1 px-6 py-4 border-r border-slate-200 cursor-pointer',
             'hover:bg-slate-50',
-            isDurationOpen && 'bg-slate-50'
+            isDurationOpen && 'bg-slate-50',
           ])}
           onClick={() => setIsDurationOpen(!isDurationOpen)}
         >
@@ -183,7 +98,7 @@ function SearchBoxProperty() {
           className={clsx([
             'flex-1 px-6 py-4 cursor-pointer',
             'hover:bg-slate-50',
-            isTypeOpen && 'bg-slate-50'
+            isTypeOpen && 'bg-slate-50',
           ])}
           onClick={() => setIsTypeOpen(!isTypeOpen)}
         >
@@ -193,7 +108,8 @@ function SearchBoxProperty() {
 
         {/* Search Button */}
         <div className="ml-4 pr-4">
-          <button className="flex items-center justify-center w-12 h-12 bg-teal-600 hover:bg-teal-700 rounded-full transition-colors">
+          <button
+            className="flex items-center justify-center w-12 h-12 bg-teal-600 hover:bg-teal-700 rounded-full transition-colors">
             <Search size={20} className="text-white" />
           </button>
         </div>
@@ -202,7 +118,8 @@ function SearchBoxProperty() {
       {/* Dropdown for Where section */}
       <div ref={whereRef}>
         {isWhereOpen && (
-          <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 mt-2 p-6 z-50 max-w-4xl mx-auto">
+          <div
+            className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 mt-2 p-6 z-50 max-w-4xl mx-auto">
             <h3 className="text-sm font-medium text-slate-900 mb-4">Suggested locations</h3>
             <div className="space-y-1 max-h-80 overflow-y-auto">
               {/* Search option when there's a value */}
@@ -225,7 +142,7 @@ function SearchBoxProperty() {
               {locations
                 .filter(location =>
                   location.name.toLowerCase().includes(whereValue.toLowerCase()) ||
-                  location.description.toLowerCase().includes(whereValue.toLowerCase())
+                  location.description.toLowerCase().includes(whereValue.toLowerCase()),
                 )
                 .map((location, index) => (
                   <div
@@ -246,7 +163,7 @@ function SearchBoxProperty() {
               {/* No results message */}
               {whereValue && locations.filter(location =>
                 location.name.toLowerCase().includes(whereValue.toLowerCase()) ||
-                location.description.toLowerCase().includes(whereValue.toLowerCase())
+                location.description.toLowerCase().includes(whereValue.toLowerCase()),
               ).length === 0 && (
                 <div className="flex items-center p-3 text-slate-500">
                   <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4">
@@ -266,7 +183,8 @@ function SearchBoxProperty() {
       {/* Dropdown for Duration section */}
       <div ref={durationRef}>
         {isDurationOpen && (
-          <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 mt-2 p-6 z-50 max-w-4xl mx-auto">
+          <div
+            className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 mt-2 p-6 z-50 max-w-4xl mx-auto">
             <div className="space-y-6">
               {/* Month Counter */}
               <div className="flex items-center justify-between">
@@ -323,7 +241,8 @@ function SearchBoxProperty() {
       {/* Dropdown for Type section */}
       <div ref={typeRef}>
         {isTypeOpen && (
-          <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 mt-2 p-6 z-50 max-w-4xl mx-auto">
+          <div
+            className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 mt-2 p-6 z-50 max-w-4xl mx-auto">
             <div className="space-y-1 max-h-80 overflow-y-auto">
               {propertyTypes.map((type, index) => (
                 <div

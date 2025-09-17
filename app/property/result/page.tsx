@@ -48,7 +48,7 @@ function ResultsPage() {
   }))
 
   return (
-    <ContentWrapper>
+    <ContentWrapper searchBoxType="compact">
       <div className="w-full py-4 px-2 sm:px-4 md:px-8 lg:px-12 flex justify-between items-start gap-x-5">
         {/* Property Card Results */}
         <div className={`w-full md:w-1/2 ${isMapView ? 'hidden' : 'block'}`}>
