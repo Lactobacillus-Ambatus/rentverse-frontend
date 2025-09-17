@@ -3,7 +3,7 @@
 import { ReactNode } from 'react'
 import clsx from 'clsx'
 
-interface FilledButtonProps {
+interface ButtonFilledProps {
   children: ReactNode
   onClick?: () => void
   type?: 'button' | 'submit' | 'reset'
@@ -11,13 +11,13 @@ interface FilledButtonProps {
   className?: string
 }
 
-function FilledButton({
+function ButtonFilled({
   children,
   onClick,
   type = 'button',
   disabled = false,
   className = ''
-}: FilledButtonProps) {
+}: ButtonFilledProps) {
   return (
     <button
       type={type}
@@ -36,4 +36,4 @@ function FilledButton({
   )
 }
 
-export default FilledButton
+export default ButtonFilled

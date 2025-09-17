@@ -3,7 +3,7 @@
 import React from 'react'
 import clsx from 'clsx'
 import InputEmail from './InputEmail'
-import FilledButton from './FilledButton'
+import ButtonFilled from './ButtonFilled'
 import useEmailCheckStore from '@/stores/emailCheckStore'
 
 interface ModalEmailCheckProps {
@@ -61,12 +61,12 @@ function ModalEmailCheck({ isModal = true }: ModalEmailCheckProps) {
           )}
 
           {/* Continue Button */}
-          <FilledButton
+          <ButtonFilled
             type="submit"
             disabled={!isEmailValid || isLoading}
           >
             {isLoading ? 'Loading...' : 'Continue'}
-          </FilledButton>
+          </ButtonFilled>
         </form>
       </div>
     </div>

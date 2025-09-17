@@ -6,7 +6,7 @@ import React, { ChangeEvent } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import BoxError from '@/components/BoxError'
 import InputPassword from '@/components/InputPassword'
-import FilledButton from '@/components/FilledButton'
+import ButtonFilled from '@/components/ButtonFilled'
 import useLogInStore from '@/stores/logInStore'
 
 interface ModalLogInProps {
@@ -67,12 +67,12 @@ function ModalLogIn({ isModal = true }: ModalLogInProps) {
           </div>
 
           {/* Submit Button */}
-          <FilledButton
+          <ButtonFilled
             type="submit"
             disabled={!isFormValid() || isLoading}
           >
             {isLoading ? 'Loading...' : 'Log in'}
-          </FilledButton>
+          </ButtonFilled>
           
           <div className="text-center">
             <Link href={'/'} className={'underline text-slate-700 text-sm hover:text-slate-900 transition-colors'}>

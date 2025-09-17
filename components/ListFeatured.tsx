@@ -1,54 +1,13 @@
 'use client'
 
-import type { PropertyBase } from '@/types/property'
 import CardProperty from '@/components/CardProperty'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { FreeMode } from 'swiper/modules'
+import { getAllProperties } from '@/data/properties'
 
 
 function ListFeatured() {
-  const sampleProperties: Array<PropertyBase> = [
-    {
-      id: 'a4b2-1c3d-4e5f-6789-0abcde123456',
-      title: "Modern Apartment in City Center",
-      location: "New York, NY",
-      price: 412,
-      imageUrl: "https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png",
-      area: 1200,
-      rating: 4.5,
-      propertyType: 'apartment'
-    },
-    {
-      id: 'a4b2-1c3d-4e5f-6789-0abcde123457',
-      title: "Modern Apartment in City Center",
-      location: "New York, NY",
-      price: 412,
-      imageUrl: "https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png",
-      area: 1200,
-      rating: 4.5,
-      propertyType: 'condominium'
-    },
-    {
-      id: 'a4b2-1c3d-4e5f-6789-0abcde123458',
-      title: "Modern Apartment in City Center",
-      location: "New York, NY",
-      price: 412,
-      imageUrl: "https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png",
-      area: 1200,
-      rating: 4.5,
-      propertyType: 'villa'
-    },
-    {
-      id: 'a4b2-1c3d-4e5f-6789-0abcde123459',
-      title: "Modern Apartment in City Center",
-      location: "New York, NY",
-      price: 412,
-      imageUrl: "https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png",
-      area: 1200,
-      rating: 4.5,
-      propertyType: 'townhouse'
-    },
-  ]
+  const sampleProperties = getAllProperties()
 
   return (
     <div className="py-16 px-4 md:px-16">
@@ -93,7 +52,7 @@ function ListFeatured() {
       >
         {sampleProperties.map((property) => (
           <SwiperSlide key={property.id}>
-            <CardProperty {...property} />
+            <CardProperty property={property} />
           </SwiperSlide>
         ))}
       </Swiper>

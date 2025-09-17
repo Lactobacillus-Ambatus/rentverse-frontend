@@ -3,7 +3,7 @@
 import React, { ChangeEvent } from 'react'
 import clsx from 'clsx'
 import { ArrowLeft } from 'lucide-react'
-import FilledButton from '@/components/FilledButton'
+import ButtonFilled from '@/components/ButtonFilled'
 import InputEmail from '@/components/InputEmail'
 import InputName from '@/components/InputName'
 import InputDate from '@/components/InputDate'
@@ -134,12 +134,12 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
           </div>
 
           {/* Submit Button */}
-          <FilledButton
+          <ButtonFilled
             type="submit"
             disabled={!isFormValid() || isLoading}
           >
             {isLoading ? 'Loading...' : 'Agree and continue'}
-          </FilledButton>
+          </ButtonFilled>
         </form>
       </div>
     </div>
