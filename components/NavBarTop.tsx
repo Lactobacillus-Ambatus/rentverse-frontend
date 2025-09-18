@@ -24,7 +24,7 @@ function NavBarTop({ searchBoxType = 'none' }: NavBarTopProps): React.ReactNode 
         searchBoxType === 'full' && 'mb-8',
       ])}>
         <Image
-          src="/logo-nav.png"
+          src="https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758183655/rentverse-base/logo-nav_j8pl7d.png"
           alt="Logo Rentverse"
           className="w-auto h-12"
           width={150}

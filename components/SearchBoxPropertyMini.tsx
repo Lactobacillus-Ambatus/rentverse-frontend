@@ -5,7 +5,7 @@ import React from 'react'
 import { Search } from 'lucide-react'
 import { useRef, useEffect } from 'react'
 import { getAllLocations, getAllPropertyTypes } from '@/data/searchbox-options'
-import useSearchBoxPropertyStore from '@/stores/searchBoxPropertyStore'
+import usePropertiesStore from '@/stores/propertiesStore'
 
 function SearchBoxPropertyMini(props: React.HTMLAttributes<HTMLDivElement>): React.ReactNode {
   const {
@@ -21,7 +21,7 @@ function SearchBoxPropertyMini(props: React.HTMLAttributes<HTMLDivElement>): Rea
     getTypeText,
     handleLocationSelect,
     handleTypeSelect,
-  } = useSearchBoxPropertyStore()
+  } = usePropertiesStore()
 
   const whereRef = useRef<HTMLDivElement>(null)
   const durationRef = useRef<HTMLDivElement>(null)

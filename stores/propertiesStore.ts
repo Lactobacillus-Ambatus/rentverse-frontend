@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import type { PropertyBase, PropertiesState, SearchFilters } from '../types/property'
-import type { SearchBoxState } from '../types/searchbox'
+import type { PropertyBase, PropertiesState, SearchFilters } from '@/types/property'
+import type { SearchBoxState } from '@/types/searchbox'
 
 interface PropertiesActions {
   // Search box actions

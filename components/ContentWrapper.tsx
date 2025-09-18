@@ -3,6 +3,7 @@ import NavBar from '@/components/NavBar'
 import Footer from '@/components/Footer'
 
 import type { SearchBoxType } from '@/types/searchbox'
+import clsx from 'clsx'
 
 interface ContentWrapperProps {
   children: React.ReactNode
@@ -14,7 +15,10 @@ function ContentWrapper({ children, withFooter = true, searchBoxType = 'none' }:
   return (
     <>
       <NavBar searchBoxType={searchBoxType} />
-      <div className={searchBoxType === 'full' ? 'mt-48' : 'mt-24'}>
+      <div className={clsx([
+        'relative',
+        searchBoxType === 'full' ? 'pt-48' : 'pt-24',
+      ])}>
         {children}
       </div>
       {withFooter && <Footer />}

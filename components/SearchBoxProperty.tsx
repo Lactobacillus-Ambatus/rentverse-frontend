@@ -5,7 +5,7 @@ import React from 'react'
 import { useRef, useEffect } from 'react'
 import { Search, Plus, Minus } from 'lucide-react'
 import { getAllLocations, getAllPropertyTypes } from '@/data/searchbox-options'
-import useSearchBoxPropertyStore from '@/stores/searchBoxPropertyStore'
+import usePropertiesStore from '@/stores/propertiesStore'
 
 function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.ReactNode {
   const {
@@ -27,7 +27,7 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
     getTypeText,
     handleLocationSelect,
     handleTypeSelect,
-  } = useSearchBoxPropertyStore()
+  } = usePropertiesStore()
 
   const whereRef = useRef<HTMLDivElement>(null)
   const durationRef = useRef<HTMLDivElement>(null)
@@ -63,47 +63,50 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
         {/* Where Section */}
         <div
           className={clsx([
-            'flex-1 pl-10 pr-6 py-4 border-r border-slate-200 cursor-pointer',
+            'flex-1 pl-8 pr-6 py-5 border-r border-slate-200 cursor-pointer flex flex-col justify-center',
             'hover:bg-slate-50',
             isWhereOpen && 'bg-slate-50',
           ])}
           onClick={() => setIsWhereOpen(true)}
         >
-          <label className="block text-sm font-medium text-slate-900 mb-1">Where</label>
+          <label
+            className="block text-xs font-semibold text-slate-900 mb-1 uppercase tracking-wide text-left">Where</label>
           <input
             type="text"
-            placeholder="Search locations"
+            placeholder="Search destinations"
             value={whereValue}
             onChange={(e) => setWhereValue(e.target.value)}
             onFocus={() => setIsWhereOpen(true)}
-            className="w-full text-sm text-slate-600 placeholder-slate-400 bg-transparent border-none outline-none"
+            className="w-full text-sm text-slate-600 placeholder-slate-400 bg-transparent border-none outline-none font-medium text-left"
           />
         </div>
 
         {/* Duration Section */}
         <div
           className={clsx([
-            'flex-1 px-6 py-4 border-r border-slate-200 cursor-pointer',
+            'flex-1 px-6 py-5 border-r border-slate-200 cursor-pointer flex flex-col justify-center',
             'hover:bg-slate-50',
             isDurationOpen && 'bg-slate-50',
           ])}
           onClick={() => setIsDurationOpen(!isDurationOpen)}
         >
-          <label className="block text-sm font-medium text-slate-900 mb-1">Duration</label>
-          <span className="text-sm text-slate-600">{getDurationText()}</span>
+          <label
+            className="block text-xs font-semibold text-slate-900 mb-1 uppercase tracking-wide text-left">Duration</label>
+          <span className="text-sm text-slate-600 font-medium text-left">{getDurationText()}</span>
         </div>
 
         {/* Type Section */}
         <div
           className={clsx([
-            'flex-1 px-6 py-4 cursor-pointer',
+            'flex-1 px-6 py-5 cursor-pointer flex flex-col justify-center',
             'hover:bg-slate-50',
             isTypeOpen && 'bg-slate-50',
           ])}
           onClick={() => setIsTypeOpen(!isTypeOpen)}
         >
-          <label className="block text-sm font-medium text-slate-900 mb-1">Type</label>
-          <span className="text-sm text-slate-600">{getTypeText()}</span>
+          <label
+            className="block text-xs font-semibold text-slate-900 mb-1 uppercase tracking-wide text-left">Type</label>
+          <span className="text-sm text-slate-600 font-medium text-left">{getTypeText()}</span>
         </div>
 
         {/* Search Button */}
@@ -120,7 +123,7 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
         {isWhereOpen && (
           <div
             className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 mt-2 p-6 z-50 max-w-4xl mx-auto">
-            <h3 className="text-sm font-medium text-slate-900 mb-4">Suggested locations</h3>
+            <h3 className="text-sm font-medium text-slate-900 mb-4 text-left">Suggested locations</h3>
             <div className="space-y-1 max-h-80 overflow-y-auto">
               {/* Search option when there's a value */}
               {whereValue && (
@@ -128,12 +131,13 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
                   className="flex items-center p-3 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors border-b border-slate-100 mb-2"
                   onClick={() => handleLocationSelect({ name: whereValue })}
                 >
-                  <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4">
+                  <div
+                    className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4 flex-shrink-0">
                     <Search size={20} className="text-slate-600" />
                   </div>
-                  <div>
-                    <div className="font-medium text-slate-900">Search &quot;{whereValue}&quot;</div>
-                    <div className="text-sm text-slate-500">Search for this location</div>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium text-slate-900 text-left">Search &quot;{whereValue}&quot;</div>
+                    <div className="text-sm text-slate-500 text-left">Search for this location</div>
                   </div>
                 </div>
               )}
@@ -150,12 +154,13 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
                     className="flex items-center p-3 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
                     onClick={() => handleLocationSelect(location)}
                   >
-                    <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4">
+                    <div
+                      className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4 flex-shrink-0">
                       <span className="text-xl">{location.icon}</span>
                     </div>
-                    <div>
-                      <div className="font-medium text-slate-900">{location.name}</div>
-                      <div className="text-sm text-slate-500">{location.description}</div>
+                    <div className="flex-1 text-left">
+                      <div className="font-medium text-slate-900 text-left">{location.name}</div>
+                      <div className="text-sm text-slate-500 text-left">{location.description}</div>
                     </div>
                   </div>
                 ))}
@@ -166,12 +171,13 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
                 location.description.toLowerCase().includes(whereValue.toLowerCase()),
               ).length === 0 && (
                 <div className="flex items-center p-3 text-slate-500">
-                  <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4">
+                  <div
+                    className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4 flex-shrink-0">
                     <Search size={20} className="text-slate-400" />
                   </div>
-                  <div>
-                    <div className="font-medium text-slate-600">No locations found</div>
-                    <div className="text-sm text-slate-400">Try searching for a different location</div>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium text-slate-600 text-left">No locations found</div>
+                    <div className="text-sm text-slate-400 text-left">Try searching for a different location</div>
                   </div>
                 </div>
               )}
@@ -188,9 +194,9 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
             <div className="space-y-6">
               {/* Month Counter */}
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-slate-900">Month</div>
-                  <div className="text-sm text-slate-500">Rent monthly</div>
+                <div className="text-left">
+                  <div className="font-medium text-slate-900 text-left">Month</div>
+                  <div className="text-sm text-slate-500 text-left">Rent monthly</div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <button
@@ -212,9 +218,9 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
 
               {/* Year Counter */}
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-slate-900">Year</div>
-                  <div className="text-sm text-slate-500">Rent yearly</div>
+                <div className="text-left">
+                  <div className="font-medium text-slate-900 text-left">Year</div>
+                  <div className="text-sm text-slate-500 text-left">Rent yearly</div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <button
@@ -250,12 +256,13 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
                   className="flex items-center p-3 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
                   onClick={() => handleTypeSelect(type)}
                 >
-                  <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4">
+                  <div
+                    className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4 flex-shrink-0">
                     <span className="text-xl">{type.icon}</span>
                   </div>
-                  <div>
-                    <div className="font-medium text-slate-900">{type.name}</div>
-                    <div className="text-sm text-slate-500">{type.description}</div>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium text-slate-900 text-left">{type.name}</div>
+                    <div className="text-sm text-slate-500 text-left">{type.description}</div>
                   </div>
                 </div>
               ))}

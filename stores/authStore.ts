@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { User, AuthState } from '../types/auth'
+import type { User, AuthState } from '@/types/auth'
 
 interface AuthActions {
   // Login functionality

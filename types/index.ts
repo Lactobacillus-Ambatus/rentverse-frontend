@@ -36,20 +36,38 @@ export type {
   LocationBaseType,
 } from './location'
 
-// Common utility types
-export interface ApiResponse<T> {
-  data: T
-  message: string
-  success: boolean
-}
+// API types
+export type {
+  ApiResponse,
+  ApiError,
+  PaginationMeta,
+  PaginatedResponse,
+  ApiRequestOptions,
+  BatchOperationOptions,
+  BatchOperationResult,
+  CacheOptions,
+  CacheEntry,
+  RetryOptions,
+  ServiceHealth,
+  HealthCheckResponse,
+  LoginRequest,
+  LoginResponse,
+  SignUpRequest,
+  EmailCheckRequest,
+  EmailCheckResponse,
+  PropertySearchRequest,
+  PropertyCreateRequest,
+  PropertyUpdateRequest,
+  CreateRequest,
+  UpdateRequest,
+  DeleteRequest,
+  GetRequest,
+  FileUploadRequest,
+  FileUploadResponse,
+} from './api'
 
-export interface PaginationData {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
-}
 
+// Common utility types (keeping these here for backward compatibility)
 export interface LoadingState {
   isLoading: boolean
   error: string | null

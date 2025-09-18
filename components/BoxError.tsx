@@ -4,11 +4,12 @@ function BoxError({ errorTitle, errorDescription }: { errorTitle: string, errorD
   return (
     <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl my-4">
       <div className="flex-shrink-0">
-        <Image src={'/alert-sign.png'}
-               alt={'Error'}
-               width={40}
-               height={40}
-               className={'w-10 h-auto aspect-square'}
+        <Image
+          src="https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758183654/rentverse-base/alert-sign_rkqgue.png"
+          alt={'Error'}
+          width={40}
+          height={40}
+          className={'w-10 h-auto aspect-square'}
         />
       </div>
       <div className="flex-1 min-w-0">
