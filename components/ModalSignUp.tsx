@@ -1,14 +1,15 @@
 'use client'
 
-import React, { ChangeEvent } from 'react'
 import clsx from 'clsx'
+import { useRouter } from 'next/navigation'
+import React, { ChangeEvent } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import ButtonFilled from '@/components/ButtonFilled'
 import InputEmail from '@/components/InputEmail'
 import InputName from '@/components/InputName'
 import InputDate from '@/components/InputDate'
 import InputPassword from '@/components/InputPassword'
-import useSignUpStore from '@/stores/signUpStore'
+import useAuthStore from '@/stores/authStore'
 import BoxError from '@/components/BoxError'
 
 interface ModalSignUpProps {
@@ -21,17 +22,22 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
     lastName,
     birthdate,
     email,
-    password,
+    signUpPassword,
     isLoading,
     error,
     setFirstName,
     setLastName,
     setBirthdate,
     setEmail,
-    setPassword,
-    isFormValid,
-    submitSignUp
-  } = useSignUpStore()
+    setSignUpPassword,
+    isSignUpFormValid,
+    submitSignUp,
+  } = useAuthStore()
+  const router = useRouter()
+
+  const handleBackButton = () => {
+    router.back()
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,11 +47,12 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
   const containerContent = (
     <div className={clsx([
       isModal ? 'shadow-xl' : 'border border-slate-400',
-      'bg-white rounded-3xl max-w-md w-full p-8'
+      'bg-white rounded-3xl max-w-md w-full p-8',
     ])}>
       {/* Header */}
       <div className="text-center mb-6 relative">
-        <ArrowLeft size={20} className="absolute left-0 top-1 text-slate-800 cursor-pointer hover:text-slate-600" />
+        <ArrowLeft onClick={handleBackButton} size={20}
+                   className="absolute left-0 top-1 text-slate-800 cursor-pointer hover:text-slate-600" />
         <h2 className="text-xl font-semibold text-slate-900 mb-2">
           Finish sign up
         </h2>
@@ -74,7 +81,8 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
               onLastNameChange={(e: ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)}
             />
             <p className="text-xs text-slate-500 mt-2">
-              Make sure this matches the name on your government ID. If you go by another name, you can add a preferred first name.
+              Make sure this matches the name on your government ID. If you go by another name, you can add a preferred
+              first name.
             </p>
           </div>
 
@@ -89,7 +97,8 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
               required
             />
             <p className="text-xs text-slate-500 mt-2">
-              To sign up, you need to be at least 18. Your birthday won&apos;t be shared with other people who use Rentverse.
+              To sign up, you need to be at least 18. Your birthday won&apos;t be shared with other people who use
+              Rentverse.
             </p>
           </div>
 
@@ -115,8 +124,8 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
               Password
             </label>
             <InputPassword
-              value={password}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+              value={signUpPassword}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setSignUpPassword(e.target.value)}
               placeholder="Password"
               required
               showStrengthIndicator={true}
@@ -136,7 +145,7 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
           {/* Submit Button */}
           <ButtonFilled
             type="submit"
-            disabled={!isFormValid() || isLoading}
+            disabled={!isSignUpFormValid() || isLoading}
           >
             {isLoading ? 'Loading...' : 'Agree and continue'}
           </ButtonFilled>

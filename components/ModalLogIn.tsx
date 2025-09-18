@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
 import React, { ChangeEvent } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import BoxError from '@/components/BoxError'
 import InputPassword from '@/components/InputPassword'
 import ButtonFilled from '@/components/ButtonFilled'
-import useLogInStore from '@/stores/logInStore'
+import useAuthStore from '@/stores/authStore'
 
 interface ModalLogInProps {
   isModal?: boolean
@@ -19,9 +20,14 @@ function ModalLogIn({ isModal = true }: ModalLogInProps) {
     isLoading,
     error,
     setPassword,
-    isFormValid,
-    submitLogIn
-  } = useLogInStore()
+    isLoginFormValid,
+    submitLogIn,
+  } = useAuthStore()
+  const router = useRouter()
+
+  const handleBackButton = () => {
+    router.back()
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,11 +37,12 @@ function ModalLogIn({ isModal = true }: ModalLogInProps) {
   const containerContent = (
     <div className={clsx([
       isModal ? 'shadow-xl' : 'border border-slate-400',
-      'bg-white rounded-3xl max-w-md w-full p-8'
+      'bg-white rounded-3xl max-w-md w-full p-8',
     ])}>
       {/* Header */}
       <div className="text-center mb-6 relative">
-        <ArrowLeft size={20} className="absolute left-0 top-1 text-slate-800 cursor-pointer hover:text-slate-600" />
+        <ArrowLeft onClick={handleBackButton} size={20}
+                   className="absolute left-0 top-1 text-slate-800 cursor-pointer hover:text-slate-600" />
         <h2 className="text-xl font-semibold text-slate-900 mb-2">
           Log in
         </h2>
@@ -69,11 +76,11 @@ function ModalLogIn({ isModal = true }: ModalLogInProps) {
           {/* Submit Button */}
           <ButtonFilled
             type="submit"
-            disabled={!isFormValid() || isLoading}
+            disabled={!isLoginFormValid() || isLoading}
           >
             {isLoading ? 'Loading...' : 'Log in'}
           </ButtonFilled>
-          
+
           <div className="text-center">
             <Link href={'/'} className={'underline text-slate-700 text-sm hover:text-slate-900 transition-colors'}>
               Forgot password?

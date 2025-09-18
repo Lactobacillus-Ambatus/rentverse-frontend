@@ -12,23 +12,23 @@ interface ButtonFilledProps {
 }
 
 function ButtonFilled({
-  children,
-  onClick,
-  type = 'button',
-  disabled = false,
-  className = ''
-}: ButtonFilledProps) {
+                        children,
+                        onClick,
+                        type = 'button',
+                        disabled = false,
+                        className = '',
+                      }: ButtonFilledProps) {
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
       className={clsx([
-        'w-full bg-teal-600 text-white font-medium py-3 px-4 rounded-full',
+        'w-full bg-teal-600 text-white font-medium py-3 px-4 rounded-full cursor-pointer',
         'focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2',
         'hover:bg-teal-700 disabled:bg-slate-400 disabled:cursor-not-allowed',
         'transition-colors duration-200',
-        className
+        className,
       ])}
     >
       {children}

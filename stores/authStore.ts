@@ -16,7 +16,7 @@ interface AuthActions {
 
   // Email check functionality
   validateEmail: (email: string) => boolean
-  submitEmailCheck: () => Promise<void>
+  submitEmailCheck: () => Promise<{ exists: boolean; isActive: boolean; role: string | null } | null>
 
   // General auth actions
   setLoading: (loading: boolean) => void
@@ -86,10 +86,15 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   submitLogIn: async () => {
-    const { setLoading, setError } = get()
+    const { email, password, setLoading, setError } = get()
 
     if (!get().isLoginFormValid()) {
       setError('Please enter a valid password')
+      return
+    }
+
+    if (!email) {
+      setError('Email is required')
       return
     }
 
@@ -97,21 +102,44 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     setError(null)
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      const mockUser: User = {
-        id: '1',
-        email: 'user@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-      }
-
-      set({
-        user: mockUser,
-        isLoggedIn: true,
-        password: '',
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       })
-    } catch {
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        // Store user data and token
+        const user: User = {
+          id: result.data.user.id,
+          email: result.data.user.email,
+          firstName: result.data.user.name,
+          lastName: '',
+        }
+
+        set({
+          user,
+          isLoggedIn: true,
+          password: '',
+          error: null,
+        })
+
+        // Store token in localStorage for future API calls
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('authToken', result.data.token)
+        }
+
+        // Navigate to property page
+        window.location.href = '/property'
+      } else {
+        // Handle 400/401 errors
+        setError(result.message || 'Login failed. Please check your credentials.')
+      }
+    } catch (error) {
       setError('Login failed. Please try again.')
     } finally {
       setLoading(false)
@@ -161,17 +189,32 @@ const useAuthStore = create<AuthStore>((set, get) => ({
 
     if (!validateEmail(email)) {
       setError('Please enter a valid email address')
-      return
+      return null
     }
 
     setLoading(true)
     setError(null)
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 800))
-      console.log('Email checked:', email)
+      const response = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        return result.data
+      } else {
+        setError(result.message || 'Email check failed. Please try again.')
+        return null
+      }
     } catch {
       setError('Email check failed. Please try again.')
+      return null
     } finally {
       setLoading(false)
     }

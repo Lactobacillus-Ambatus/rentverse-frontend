@@ -1,34 +1,40 @@
 'use client'
 
 import React from 'react'
+import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
 import InputEmail from './InputEmail'
 import ButtonFilled from './ButtonFilled'
-import useEmailCheckStore from '@/stores/emailCheckStore'
+import useAuthStore from '@/stores/authStore'
 
 interface ModalEmailCheckProps {
   isModal?: boolean
 }
 
 function ModalEmailCheck({ isModal = true }: ModalEmailCheckProps) {
+  const router = useRouter()
   const {
     email,
     isLoading,
     error,
-    isEmailValid,
     setEmail,
-    submitEmail
-  } = useEmailCheckStore()
+    validateEmail,
+    submitEmailCheck,
+  } = useAuthStore()
+
+  const isEmailValid = validateEmail(email)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await submitEmail()
+    const data = (await submitEmailCheck()) as { exists?: boolean } | undefined
+    const exists = Boolean(data?.exists)
+    router.push(exists ? '/auth/login' : '/auth/signup')
   }
 
   const containerContent = (
     <div className={clsx([
       isModal ? 'shadow-xl' : 'border border-slate-400',
-      'bg-white rounded-3xl max-w-md w-full p-8'
+      'bg-white rounded-3xl max-w-md w-full p-8',
     ])}>
       {/* Header */}
       <div className="text-center mb-6">

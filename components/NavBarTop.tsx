@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import React from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import TextAction from '@/components/TextAction'
 import SignUpButton from '@/components/SignUpButton'
@@ -23,12 +24,14 @@ function NavBarTop({ searchBoxType = 'none' }: NavBarTopProps): React.ReactNode 
         'w-full flex items-center justify-between relative',
         searchBoxType === 'full' && 'mb-8',
       ])}>
-        <Image
-          src="https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758183655/rentverse-base/logo-nav_j8pl7d.png"
-          alt="Logo Rentverse"
-          className="w-auto h-12"
-          width={150}
-          height={48} />
+        <Link href="/">
+          <Image
+            src="https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758183655/rentverse-base/logo-nav_j8pl7d.png"
+            alt="Logo Rentverse"
+            className="w-auto h-12"
+            width={150}
+            height={48} />
+        </Link>
 
         {searchBoxType === 'compact' && <SearchBoxPropertyMini className="hidden lg:block absolute ml-[16%]" />}
 
