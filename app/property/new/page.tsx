@@ -11,6 +11,8 @@ import AddListingStepTwoManage from '@/views/AddListingStepTwoManage'
 import AddListingStepTwoTitle from '@/views/AddListingStepTwoTitle'
 import AddListingStepTwoDescription from '@/views/AddListingStepTwoDescription'
 import AddListingStepThree from '@/views/AddListingStepThree'
+import AddListingStepThreeLegal from '@/views/AddListingStepThreeLegal'
+import AddListingStepThreePrice from '@/views/AddListingStepThreePrice'
 
 function NewPropertyPage() {
   return (
@@ -27,7 +29,9 @@ function NewPropertyPage() {
       {/*<AddListingStepTwoManage />*/}
       {/*<AddListingStepTwoTitle />*/}
       {/*<AddListingStepTwoDescription />*/}
-      <AddListingStepThree />
+      {/*<AddListingStepThree />*/}
+      {/*<AddListingStepThreeLegal />*/}
+      <AddListingStepThreePrice />
     </>
   )
 }
