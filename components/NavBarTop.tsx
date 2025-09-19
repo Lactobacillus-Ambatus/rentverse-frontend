@@ -1,3 +1,5 @@
+'use client'
+
 import clsx from 'clsx'
 import React from 'react'
 import Link from 'next/link'
@@ -9,12 +11,14 @@ import SearchBoxProperty from '@/components/SearchBoxProperty'
 import SearchBoxPropertyMini from '@/components/SearchBoxPropertyMini'
 
 import type { SearchBoxType } from '@/types/searchbox'
+import ButtonSecondary from '@/components/ButtonSecondary'
 
 interface NavBarTopProps {
   searchBoxType?: SearchBoxType
+  isQuestionnaire?: boolean
 }
 
-function NavBarTop({ searchBoxType = 'none' }: NavBarTopProps): React.ReactNode {
+function NavBarTop({ searchBoxType = 'none', isQuestionnaire = false }: NavBarTopProps): React.ReactNode {
   return (
     <div className={clsx([
       'w-full fixed z-50',
@@ -33,21 +37,25 @@ function NavBarTop({ searchBoxType = 'none' }: NavBarTopProps): React.ReactNode 
             height={48} />
         </Link>
 
-        {searchBoxType === 'compact' && <SearchBoxPropertyMini className="hidden lg:block absolute ml-[16%]" />}
+        {(searchBoxType === 'compact' && !isQuestionnaire) &&
+          <SearchBoxPropertyMini className="hidden lg:block absolute ml-[16%]" />}
 
-        <nav className="hidden md:flex items-center space-x-8">
-          <li>
-            <TextAction href={'/'} text={'List your property'} />
-          </li>
-          <li>
-            <LanguageSelector />
-          </li>
-          <li>
-            <SignUpButton />
-          </li>
-        </nav>
+        {!isQuestionnaire && (
+          <nav className="hidden md:flex items-center space-x-8">
+            <li>
+              <TextAction href={'/'} text={'List your property'} />
+            </li>
+            <li>
+              <LanguageSelector />
+            </li>
+            <li>
+              <SignUpButton />
+            </li>
+          </nav>)}
+        {isQuestionnaire && <ButtonSecondary label="Exit" onClick={() => {
+        }} />}
       </div>
-      {searchBoxType === 'full' && <SearchBoxProperty className="hidden lg:block" />}
+      {(searchBoxType === 'full' && !isQuestionnaire) && <SearchBoxProperty className="hidden lg:block" />}
     </div>
   )
 }

@@ -4,7 +4,7 @@ import BarProperty from '@/components/BarProperty'
 import ImageGallery from '@/components/ImageGallery'
 import BoxPropertyPrice from '@/components/BoxPropertyPrice'
 
-async function DetailPage({ params }: { params: Promise<{ slug: string }> }) {
+function DetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const slug = await params
   const tempImage: [string, string, string, string, string] = [
     'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png',
