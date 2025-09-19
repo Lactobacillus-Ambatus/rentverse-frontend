@@ -31,9 +31,11 @@ export type {
 export type {
   Location,
   PopularLocation,
-  Region,
-  MapLocation,
   LocationBaseType,
+  LocationCoordinates,
+  DistrictLocations,
+  StateLocations,
+  MalaysiaLocations,
 } from './location'
 
 // API types

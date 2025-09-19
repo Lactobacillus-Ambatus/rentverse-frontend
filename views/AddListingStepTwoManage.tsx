@@ -415,12 +415,13 @@ function AddListingStepTwoManage() {
               <p className="text-sm text-slate-500 text-center mb-2">
                 Drag and drop your photos here, or
               </p>
-              <ButtonCircle
-                icon={<Plus size={20} />}
+              <button
                 onClick={handleBrowseFiles}
-                label="Browse files"
-                className="mb-2"
-              />
+                className="flex items-center space-x-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors duration-200 mb-2"
+              >
+                <Plus size={20} />
+                <span>Browse files</span>
+              </button>
               <p className="text-xs text-slate-400 text-center">
                 (JPG, PNG, GIF up to 10MB)
               </p>
@@ -466,10 +467,10 @@ function AddListingStepTwoManage() {
                 Cancel
               </button>
               <button
-                onClick={handleFileSelect}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all"
+                onClick={handleCloseModal}
+                className="px-4 py-2 text-sm bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-all"
               >
-                Upload
+                Done
               </button>
             </div>
           </div>

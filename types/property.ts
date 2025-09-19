@@ -7,7 +7,7 @@ export interface PropertyBase {
   imageUrl: string
   area: number
   rating: number
-  propertyType: string
+  propertyType: PropertyType
 }
 
 // Property management state
@@ -19,7 +19,7 @@ export interface PropertiesState {
 }
 
 // Property type options
-export type PropertyType = 'apartment' | 'condominium' | 'villa' | 'townhouse' | 'house' | 'studio'
+export type PropertyType = 'apartment' | 'condominium' | 'villa' | 'townhouse' | 'house' | 'studio' | 'penthouse'
 
 // Property filters and search
 export interface SearchFilters {

@@ -4,11 +4,10 @@ import Image from 'next/image'
 import ContentWrapper from '@/components/ContentWrapper'
 import BarProperty from '@/components/BarProperty'
 import ImageGallery from '@/components/ImageGallery'
-import BoxPropertyPrice from '@/components/BoxPropertyPrice'
-import MapViewer from '@/components/MapViewer'
+import { Download, ExternalLink } from 'lucide-react'
 import { use } from 'react'
 
-function DetailPage({ params }: { params: Promise<{ id: string }> }) {
+function RentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
 
   const tempImage: [string, string, string, string, string] = [
@@ -19,14 +18,24 @@ function DetailPage({ params }: { params: Promise<{ id: string }> }) {
     'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211362/rentverse-rooms/Gemini_Generated_Image_2wt0y22wt0y22wt0_ocdafo.png',
   ]
 
-  const handleBookingClick = () => {
-    // Handle booking logic here
-    console.log('Booking clicked')
+  // Generate invoice number based on id
+  const invoiceNumber = `INV${id.toUpperCase()}`
+
+  const handleShareableLink = () => {
+    const url = `${window.location.origin}/rents/${id}`
+    navigator.clipboard.writeText(url)
+    // You can add a toast notification here
+    console.log('Shareable link copied to clipboard')
+  }
+
+  const handleDownloadDocument = () => {
+    // Handle document download logic here
+    console.log('Downloading agreement document')
   }
 
   return (
     <ContentWrapper>
-      <BarProperty title="Tijani Raja Dewa - Apartements" />
+      <BarProperty title={`Tijani Raja Dewa - Apartements # ${invoiceNumber}`} />
 
       <section className="space-y-6">
         <ImageGallery images={tempImage} />
@@ -81,9 +90,71 @@ function DetailPage({ params }: { params: Promise<{ id: string }> }) {
             </div>
           </div>
 
-          {/* Right side - Booking box */}
+          {/* Right side - Agreement box */}
           <div className="lg:col-span-1">
-            <BoxPropertyPrice price={1200} />
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm sticky top-6">
+              <div className="space-y-6">
+                {/* Agreement Header */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                    <Image
+                      src="https://res.cloudinary.com/dqhuvu22u/image/upload/v1758219434/rentverse-base/icon-star_kwohms.png"
+                      width={24}
+                      height={24}
+                      alt="Agreement icon"
+                      className="w-6 h-6"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      Your agreement
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      has been release
+                    </p>
+                  </div>
+                </div>
+
+                {/* Shareable Link */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Shareable Link
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={`rentverse.com/rents/${id}`}
+                      readOnly
+                      className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-600"
+                    />
+                    <button
+                      onClick={handleShareableLink}
+                      className="p-2 text-slate-600 hover:text-teal-600 transition-colors"
+                      title="Copy link"
+                    >
+                      <ExternalLink size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Download Agreement */}
+                <button
+                  onClick={handleDownloadDocument}
+                  className="w-full flex items-center justify-center space-x-2 bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-4 rounded-xl transition-colors duration-200"
+                >
+                  <Download size={16} />
+                  <span>Download document</span>
+                </button>
+
+                {/* Invoice Information */}
+                <div className="pt-4 border-t border-slate-200">
+                  <div className="text-center">
+                    <p className="text-sm text-slate-500">Invoice Number</p>
+                    <p className="text-lg font-semibold text-slate-900">{invoiceNumber}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -95,28 +166,16 @@ function DetailPage({ params }: { params: Promise<{ id: string }> }) {
           <p className="text-lg text-slate-600">Panji, Kota Bharu, Kelantan, Malaysia</p>
         </div>
 
-        {/* MapTiler Map */}
-        <div className="w-full h-80 rounded-2xl overflow-hidden border border-slate-200">
-          <MapViewer
-            center={{ lng: 102.2386, lat: 6.1254 }}
-            zoom={14}
-            style="streets-v2"
-            height="320px"
-            width="100%"
-            markers={[
-              {
-                lng: 102.2386,
-                lat: 6.1254,
-                popup: '<div class="p-2"><h3 class="font-semibold">Tijani Raja Dewa - Apartements</h3><p class="text-sm text-slate-600">Panji, Kota Bharu, Kelantan</p></div>',
-                color: '#0d9488',
-              },
-            ]}
-            className="rounded-2xl"
-          />
+        {/* Map container */}
+        <div className="w-full h-80 bg-slate-100 rounded-2xl overflow-hidden border border-slate-200">
+          {/* Map placeholder - replace with actual map component */}
+          <div className="w-full h-full flex items-center justify-center text-slate-500">
+            Map will be displayed here
+          </div>
         </div>
       </section>
     </ContentWrapper>
   )
 }
 
-export default DetailPage
+export default RentDetailPage
