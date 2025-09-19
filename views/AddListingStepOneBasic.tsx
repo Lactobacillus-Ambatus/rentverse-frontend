@@ -4,84 +4,143 @@ import { useState } from 'react'
 import QuestionnaireWrapper from '@/components/QuestionnaireWrapper'
 
 function AddListingStepOneBasic() {
-  const [selectedFurnishing, setSelectedFurnishing] = useState('')
+  const [bedrooms, setBedrooms] = useState(0)
+  const [bathrooms, setBathrooms] = useState(1)
+  const [indoorArea, setIndoorArea] = useState('')
+  const [outdoorArea, setOutdoorArea] = useState('')
+  const [plotSize, setPlotSize] = useState('')
 
-  const furnishingOptions = [
-    { value: 'unfurnished', label: 'Unfurnished' },
-    { value: 'fully-furnished', label: 'Fully furnished' },
-    { value: 'partly-furnished', label: 'Partly furnished' },
-    { value: 'negotiable', label: 'Negotiable' },
-  ]
+  const incrementCount = (value: number, setter: (val: number) => void) => {
+    setter(value + 1)
+  }
 
-  const handleFurnishingSelect = (value: string) => {
-    setSelectedFurnishing(value)
+  const decrementCount = (value: number, setter: (val: number) => void) => {
+    if (value > 0) {
+      setter(value - 1)
+    }
   }
 
   return (
     <QuestionnaireWrapper>
-      <div className="max-w-6xl mx-auto p-8">
+      <div className="max-w-6xl w-full mx-auto p-12">
         <div className="space-y-8">
           {/* Header */}
           <div className="space-y-3">
             <h2 className="text-3xl font-serif text-slate-900">
-              Add more details
+              Share some basics about your place
             </h2>
-            <p className="text-lg text-slate-600">
-              Enhance your list with additional information
+            <p className="text-base text-slate-500 leading-relaxed">
+              You&apos;ll add more details later, like bed types.
             </p>
           </div>
 
-          {/* Furnishing Options */}
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <label className="block text-lg font-medium text-slate-900">
-                How is your house available?
-              </label>
-
-              {/* Furnishing Selection Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                {furnishingOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => handleFurnishingSelect(option.value)}
-                    className={`
-                      relative p-4 rounded-xl border-2 transition-all duration-200 text-left
-                      ${selectedFurnishing === option.value
-                      ? 'border-slate-900 bg-slate-50'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }
-                    `}
-                  >
-                    {/* Radio button indicator */}
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className={`
-                          w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
-                          ${selectedFurnishing === option.value
-                          ? 'border-slate-900 bg-slate-900'
-                          : 'border-slate-300'
-                        }
-                        `}
-                      >
-                        {selectedFurnishing === option.value && (
-                          <div className="w-2 h-2 rounded-full bg-white"></div>
-                        )}
-                      </div>
-                      <span
-                        className={`
-                          font-medium transition-colors
-                          ${selectedFurnishing === option.value
-                          ? 'text-slate-900'
-                          : 'text-slate-700'
-                        }
-                        `}
-                      >
-                        {option.label}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+          {/* Form Fields */}
+          <div className="space-y-8">
+            {/* Bedrooms */}
+            <div className="flex items-center justify-between py-4 border-b border-slate-200">
+              <span className="text-lg text-slate-900">Bedrooms</span>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => decrementCount(bedrooms, setBedrooms)}
+                  className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:border-slate-400 transition-colors"
+                  disabled={bedrooms === 0}
+                >
+                  <span className="text-lg leading-none">−</span>
+                </button>
+                <span className="text-lg font-medium text-slate-900 min-w-[3rem] text-center">
+                  {bedrooms === 0 ? 'Studio' : bedrooms}
+                </span>
+                <button
+                  onClick={() => incrementCount(bedrooms, setBedrooms)}
+                  className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:border-slate-400 transition-colors"
+                >
+                  <span className="text-lg leading-none">+</span>
+                </button>
               </div>
+            </div>
+
+            {/* Bathrooms */}
+            <div className="flex items-center justify-between py-4 border-b border-slate-200">
+              <span className="text-lg text-slate-900">Bathrooms</span>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => decrementCount(bathrooms, setBathrooms)}
+                  className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:border-slate-400 transition-colors"
+                  disabled={bathrooms === 0}
+                >
+                  <span className="text-lg leading-none">−</span>
+                </button>
+                <span className="text-lg font-medium text-slate-900 min-w-[2rem] text-center">
+                  {bathrooms}
+                </span>
+                <button
+                  onClick={() => incrementCount(bathrooms, setBathrooms)}
+                  className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:border-slate-400 transition-colors"
+                >
+                  <span className="text-lg leading-none">+</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Indoor area */}
+            <div className="space-y-3">
+              <label className="block text-lg text-slate-900">Indoor area</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={indoorArea}
+                  onChange={(e) => setIndoorArea(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-4 py-3 pr-12 text-base border border-slate-200 rounded-full bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+                <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500">
+                  Sqft
+                </span>
+              </div>
+              <p className="text-sm text-slate-500">
+                All space between a floor and a ceiling that is covered by walls, doorways, or windows.
+              </p>
+            </div>
+
+            {/* Outdoor area */}
+            <div className="space-y-3">
+              <label className="block text-lg text-slate-900">Outdoor area</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={outdoorArea}
+                  onChange={(e) => setOutdoorArea(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-4 py-3 pr-12 text-base border border-slate-200 rounded-full bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+                <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500">
+                  Sqft
+                </span>
+              </div>
+              <p className="text-sm text-slate-500">
+                Combined size of the terrace, pool, parking area, and sala. Do not include the size of the garden.
+              </p>
+            </div>
+
+            {/* Plot size */}
+            <div className="space-y-3">
+              <label className="block text-lg text-slate-900">Plot size</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={plotSize}
+                  onChange={(e) => setPlotSize(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-4 py-3 pr-12 text-base border border-slate-200 rounded-full bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+                <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500">
+                  Sqft
+                </span>
+              </div>
+              <p className="text-sm text-slate-500">
+                A land plot is a parcel of land that has defined boundaries (or borders) and is registered with the
+                local government.
+              </p>
             </div>
           </div>
         </div>

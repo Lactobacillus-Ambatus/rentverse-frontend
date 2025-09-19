@@ -11,7 +11,7 @@ function AddListingStepOne() {
           <div className="space-y-6">
             <div className="space-y-4">
               <span className="text-lg text-slate-600 font-medium">Step 1</span>
-              <h1 className="text-4xl font-semibold text-slate-900 leading-tight">
+              <h1 className="text-4xl font-serif text-slate-900 leading-tight">
                 Let&apos;s start with the basics
               </h1>
               <p className="text-lg text-slate-600 leading-relaxed">
