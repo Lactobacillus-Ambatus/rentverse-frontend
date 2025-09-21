@@ -2,42 +2,107 @@ import Link from 'next/link'
 import Image from 'next/image'
 import ContentWrapper from '@/components/ContentWrapper'
 import CardProperty from '@/components/CardProperty'
+import type { Property } from '@/types/property'
 import { Plus } from 'lucide-react'
+
+// Extended property type for UI with admin status
+interface PropertyWithStatus extends Property {
+  status: string
+  owner?: string
+}
+
+function getStatusBadgeClass(status: string): string {
+  return status === 'Published' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'
+}
 
 function AllMyPropertiesPage() {
   // Sample user's property listings data
-  const myProperties = [
+  const myProperties: PropertyWithStatus[] = [
     {
       id: '1',
+      code: 'TRD001',
       title: 'Tijani Raja Dewa - Apartements',
-      location: 'Panji, Kota Bharu, Kelantan, Malaysia',
+      description: 'Modern apartment in the heart of Panji',
+      address: 'Jalan Tijani Raja Dewa',
+      city: 'Kota Bharu',
+      state: 'Kelantan',
+      zipCode: '15000',
       price: 550,
-      imageUrl: 'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png',
+      type: 'APARTMENT' as const,
+      bedrooms: 2,
+      bathrooms: 1,
       area: 123,
-      rating: 4.8,
-      propertyType: 'apartment' as const,
+      areaSqm: 123,
+      isAvailable: true,
+      viewCount: 150,
+      averageRating: 4.8,
+      totalRatings: 25,
+      isFavorited: false,
+      favoriteCount: 12,
+      images: ['https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png'],
+      amenities: ['parking', 'wifi', 'air-conditioning'],
+      latitude: 6.1254,
+      longitude: 102.2386,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
       status: 'Published',
     },
     {
       id: '2',
+      code: 'RSA002',
       title: 'Residensi Setia Alam',
-      location: 'Setia Alam, Selangor, Malaysia',
+      description: 'Luxury condominium with modern facilities',
+      address: 'Setia Alam Boulevard',
+      city: 'Shah Alam',
+      state: 'Selangor',
+      zipCode: '40170',
       price: 890,
-      imageUrl: 'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_ockiwbockiwbocki_vmmlhm.png',
+      type: 'CONDO' as const,
+      bedrooms: 3,
+      bathrooms: 2,
       area: 145,
-      rating: 4.6,
-      propertyType: 'condominium' as const,
+      areaSqm: 145,
+      isAvailable: true,
+      viewCount: 200,
+      averageRating: 4.6,
+      totalRatings: 18,
+      isFavorited: false,
+      favoriteCount: 8,
+      images: ['https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_ockiwbockiwbocki_vmmlhm.png'],
+      amenities: ['swimming-pool', 'gym', 'parking', 'wifi'],
+      latitude: 3.0738,
+      longitude: 101.4953,
+      createdAt: '2024-01-02T00:00:00Z',
+      updatedAt: '2024-01-02T00:00:00Z',
       status: 'Published',
     },
     {
       id: '3',
+      code: 'BCT003',
       title: 'Batu Caves Townhouses',
-      location: 'Batu Caves, Selangor, Malaysia',
+      description: 'Spacious townhouse near Batu Caves',
+      address: 'Jalan Batu Caves',
+      city: 'Batu Caves',
+      state: 'Selangor',
+      zipCode: '68100',
       price: 1200,
-      imageUrl: 'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_5ckgfc5ckgfc5ckg_k9uzft.png',
+      type: 'HOUSE' as const,
+      bedrooms: 4,
+      bathrooms: 3,
       area: 185,
-      rating: 4.9,
-      propertyType: 'townhouse' as const,
+      areaSqm: 185,
+      isAvailable: true,
+      viewCount: 95,
+      averageRating: 4.9,
+      totalRatings: 12,
+      isFavorited: true,
+      favoriteCount: 15,
+      images: ['https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_5ckgfc5ckgfc5ckg_k9uzft.png'],
+      amenities: ['parking', 'garden', 'wifi'],
+      latitude: 3.2370,
+      longitude: 101.6840,
+      createdAt: '2024-01-03T00:00:00Z',
+      updatedAt: '2024-01-03T00:00:00Z',
       status: 'Published',
     },
   ]
@@ -62,11 +127,7 @@ function AllMyPropertiesPage() {
           <div key={property.id} className="group relative">
             {/* Status Badge */}
             <div className="absolute top-4 right-4 z-10">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                property.status === 'Published'
-                  ? 'bg-orange-100 text-orange-600'
-                  : 'bg-slate-100 text-slate-600'
-              }`}>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(property.status)}`}>
                 {property.status}
               </span>
             </div>
