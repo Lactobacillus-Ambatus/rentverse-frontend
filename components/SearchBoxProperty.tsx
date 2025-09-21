@@ -1,13 +1,13 @@
 'use client'
 
 import clsx from 'clsx'
-import React from 'react'
-import { useRef, useEffect } from 'react'
+import React, { useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Search, Plus, Minus } from 'lucide-react'
 import { getAllLocations, getAllPropertyTypes } from '@/data/searchbox-options'
 import usePropertiesStore from '@/stores/propertiesStore'
 
-function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.ReactNode {
+function SearchBoxProperty(props: Readonly<React.HTMLAttributes<HTMLDivElement>>): React.ReactNode {
   const {
     isWhereOpen,
     isDurationOpen,
@@ -15,6 +15,7 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
     whereValue,
     monthCount,
     yearCount,
+    typeValue,
     setIsWhereOpen,
     setIsDurationOpen,
     setIsTypeOpen,
@@ -27,14 +28,43 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
     getTypeText,
     handleLocationSelect,
     handleTypeSelect,
+    searchProperties,
+    loadProperties,
   } = usePropertiesStore()
 
+  const router = useRouter()
   const whereRef = useRef<HTMLDivElement>(null)
   const durationRef = useRef<HTMLDivElement>(null)
   const typeRef = useRef<HTMLDivElement>(null)
   const locations = getAllLocations()
   const propertyTypes = getAllPropertyTypes()
   const { className, ...propsRest } = props
+
+  // Handle search functionality
+  const handleSearch = async () => {
+    const filters = {
+      city: whereValue || undefined,
+      type: typeValue || undefined,
+      page: 1,
+      limit: 10,
+    }
+    
+    // Perform search and navigate to results page
+    await searchProperties(filters)
+    router.push('/property/result')
+  }
+
+  // Handle location selection without triggering search
+  const handleLocationSelectOnly = (location: { name: string }) => {
+    handleLocationSelect(location)
+    setIsWhereOpen(false)
+  }
+
+  // Handle type selection without triggering search
+  const handleTypeSelectOnly = (type: { name: string }) => {
+    handleTypeSelect(type)
+    setIsTypeOpen(false)
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -55,6 +85,11 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [setIsWhereOpen, setIsDurationOpen, setIsTypeOpen])
+
+  // Load initial properties
+  useEffect(() => {
+    loadProperties()
+  }, [loadProperties])
 
   return (
     <div className={clsx(['relative', className])} {...propsRest}>
@@ -77,6 +112,11 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
             value={whereValue}
             onChange={(e) => setWhereValue(e.target.value)}
             onFocus={() => setIsWhereOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleSearch()
+              }
+            }}
             className="w-full text-sm text-slate-600 placeholder-slate-400 bg-transparent border-none outline-none font-medium text-left"
           />
         </div>
@@ -112,7 +152,8 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
         {/* Search Button */}
         <div className="ml-4 pr-4">
           <button
-            className="flex items-center justify-center w-12 h-12 bg-teal-600 hover:bg-teal-700 rounded-full transition-colors">
+            onClick={handleSearch}
+            className="flex items-center justify-center w-12 h-12 bg-teal-600 hover:bg-teal-700 rounded-full transition-colors cursor-pointer">
             <Search size={20} className="text-white" />
           </button>
         </div>
@@ -129,7 +170,7 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
               {whereValue && (
                 <div
                   className="flex items-center p-3 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors border-b border-slate-100 mb-2"
-                  onClick={() => handleLocationSelect({ name: whereValue })}
+                  onClick={() => handleLocationSelectOnly({ name: whereValue })}
                 >
                   <div
                     className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4 flex-shrink-0">
@@ -152,7 +193,7 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
                   <div
                     key={index}
                     className="flex items-center p-3 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
-                    onClick={() => handleLocationSelect(location)}
+                    onClick={() => handleLocationSelectOnly(location)}
                   >
                     <div
                       className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4 flex-shrink-0">
@@ -254,7 +295,7 @@ function SearchBoxProperty(props: React.HTMLAttributes<HTMLDivElement>): React.R
                 <div
                   key={index}
                   className="flex items-center p-3 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
-                  onClick={() => handleTypeSelect(type)}
+                  onClick={() => handleTypeSelectOnly(type)}
                 >
                   <div
                     className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg mr-4 flex-shrink-0">

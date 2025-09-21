@@ -9,17 +9,33 @@ export async function GET(request: NextRequest) {
     const queryString = searchParams.toString()
     const endpoint = queryString ? `/api/properties?${queryString}` : '/api/properties'
 
-    const response = await forwardRequest(endpoint, {
-      method: 'GET',
-      headers: getAuthHeader(request),
-    })
+    try {
+      const response = await forwardRequest(endpoint, {
+        method: 'GET',
+        headers: getAuthHeader(request),
+      })
 
-    const data = await response.json()
-
-    return NextResponse.json(data, {
-      status: response.status,
-      headers: createCacheHeaders(300), // Cache for 5 minutes
-    })
+      // Check if response is actually JSON
+      const contentType = response.headers.get('content-type')
+      if (contentType?.includes('application/json')) {
+        const data = await response.json()
+        return NextResponse.json(data, {
+          status: response.status,
+          headers: createCacheHeaders(300), // Cache for 5 minutes
+        })
+      } else {
+        return NextResponse.json(
+          { success: false, message: 'Invalid response from backend' },
+          { status: 502 }
+        )
+      }
+    } catch (backendError) {
+      console.error('Backend error during properties fetch:', backendError)
+      return NextResponse.json(
+        createErrorResponse('Backend service unavailable', backendError as Error, 503),
+        { status: 503 }
+      )
+    }
   } catch (error) {
     console.error('Error fetching properties:', error)
     return NextResponse.json(

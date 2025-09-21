@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { PropertyBase, PropertiesState, SearchFilters } from '@/types/property'
+import type { Property, PropertiesState, SearchFilters, PropertiesResponse } from '@/types/property'
 import type { SearchBoxState } from '@/types/searchbox'
 
 interface PropertiesActions {
@@ -22,19 +22,30 @@ interface PropertiesActions {
   resetSearchBox: () => void
 
   // Properties actions
-  loadProperties: () => Promise<void>
-  searchProperties: (filters: SearchFilters) => void
-  filterProperties: () => void
+  loadProperties: (filters?: SearchFilters) => Promise<void>
+  searchProperties: (filters: SearchFilters) => Promise<void>
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
-  addProperty: (property: PropertyBase) => void
-  updateProperty: (id: string, property: Partial<PropertyBase>) => void
-  deleteProperty: (id: string) => void
-  getPropertyById: (id: string) => PropertyBase | undefined
+  addProperty: (property: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>
+  updateProperty: (id: string, updates: Partial<Property>) => Promise<void>
+  deleteProperty: (id: string) => Promise<void>
+  getPropertyById: (id: string) => Property | undefined
+  clearFilters: () => void
 }
 
 type PropertiesStore = SearchBoxState & PropertiesState & PropertiesActions & {
   searchFilters: SearchFilters
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+  mapData: {
+    latMean: number
+    longMean: number
+    depth: number
+  } | null // Allow null initially
 }
 
 const usePropertiesStore = create<PropertiesStore>((set, get) => ({
@@ -52,11 +63,16 @@ const usePropertiesStore = create<PropertiesStore>((set, get) => ({
   filteredProperties: [],
   isLoading: false,
   error: null,
+  pagination: {
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  },
+  mapData: null, // Start with null instead of default zeros
   searchFilters: {
-    location: '',
-    monthCount: 1,
-    yearCount: 0,
-    propertyType: '',
+    page: 1,
+    limit: 10,
   },
 
   // Search box actions
@@ -145,121 +161,117 @@ const usePropertiesStore = create<PropertiesStore>((set, get) => ({
   setLoading: (isLoading: boolean) => set({ isLoading }),
   setError: (error: string | null) => set({ error }),
 
-  loadProperties: async () => {
+  loadProperties: async (filters?: SearchFilters) => {
     const { setLoading, setError } = get()
     setLoading(true)
     setError(null)
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Build query parameters
+      const params = new URLSearchParams()
+      
+      if (filters?.page) params.append('page', filters.page.toString())
+      if (filters?.limit) params.append('limit', filters.limit.toString())
+      if (filters?.type) params.append('type', filters.type)
+      if (filters?.city) params.append('city', filters.city)
+      if (filters?.available !== undefined) params.append('available', filters.available.toString())
+      if (filters?.minPrice) params.append('minPrice', filters.minPrice.toString())
+      if (filters?.maxPrice) params.append('maxPrice', filters.maxPrice.toString())
+      if (filters?.bedrooms) params.append('bedrooms', filters.bedrooms.toString())
 
-      const mockProperties: PropertyBase[] = [
-        {
-          id: 'a4b2-1c3d-4e5f-6789-0abcde123456',
-          title: 'Modern Apartment in City Center',
-          location: 'George Town, Penang',
-          price: 412,
-          imageUrl: 'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png',
-          area: 1200,
-          rating: 4.5,
-          propertyType: 'apartment',
-        },
-        {
-          id: 'a4b2-1c3d-4e5f-6789-0abcde123457',
-          title: 'Luxury Condominium',
-          location: 'Kuala Lumpur',
-          price: 650,
-          imageUrl: 'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png',
-          area: 1500,
-          rating: 4.8,
-          propertyType: 'condominium',
-        },
-        {
-          id: 'a4b2-1c3d-4e5f-6789-0abcde123458',
-          title: 'Beach Villa',
-          location: 'Langkawi, Kedah',
-          price: 850,
-          imageUrl: 'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png',
-          area: 2000,
-          rating: 4.9,
-          propertyType: 'villa',
-        },
-        {
-          id: 'a4b2-1c3d-4e5f-6789-0abcde123459',
-          title: 'Cozy Townhouse',
-          location: 'Malacca City, Melaka',
-          price: 380,
-          imageUrl: 'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png',
-          area: 900,
-          rating: 4.3,
-          propertyType: 'townhouse',
-        },
-      ]
+      const queryString = params.toString()
+      const url = queryString ? `/api/properties?${queryString}` : '/api/properties'
 
-      set({
-        properties: mockProperties,
-        filteredProperties: mockProperties,
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
-    } catch {
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result: PropertiesResponse = await response.json()
+
+      console.log('Properties API response:', result)
+      console.log('Map data from API:', result.data?.maps)
+
+      if (result.success) {
+        set({
+          properties: result.data.properties,
+          filteredProperties: result.data.properties,
+          pagination: result.data.pagination,
+          mapData: result.data.maps || null, // Ensure we handle missing maps data
+          searchFilters: filters || get().searchFilters,
+        })
+        
+        console.log('Updated store with mapData:', result.data.maps)
+      } else {
+        setError('Failed to load properties')
+      }
+    } catch (error) {
+      console.error('Error loading properties:', error)
       setError('Failed to load properties. Please try again.')
     } finally {
       setLoading(false)
     }
   },
 
-  searchProperties: (filters) => {
-    set({ searchFilters: filters })
-    get().filterProperties()
+  searchProperties: async (filters: SearchFilters) => {
+    await get().loadProperties(filters)
   },
 
-  filterProperties: () => {
-    const { properties, searchFilters } = get()
-
-    let filtered = properties
-
-    if (searchFilters.location) {
-      filtered = filtered.filter(property =>
-        property.location.toLowerCase().includes(searchFilters.location.toLowerCase()),
-      )
+  addProperty: async (property: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>) => {
+    // This would typically make an API call to create a new property
+    // For now, we'll just add it locally
+    const newProperty: Property = {
+      ...property,
+      id: `prop_${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }
 
-    if (searchFilters.propertyType) {
-      filtered = filtered.filter(property =>
-        property.propertyType.toLowerCase() === searchFilters.propertyType.toLowerCase(),
-      )
-    }
-
-    set({ filteredProperties: filtered })
-  },
-
-  addProperty: (property: PropertyBase) => {
     set(state => ({
-      properties: [...state.properties, property],
-      filteredProperties: [...state.filteredProperties, property],
+      properties: [...state.properties, newProperty],
+      filteredProperties: [...state.filteredProperties, newProperty],
     }))
   },
 
-  updateProperty: (id: string, updatedProperty: Partial<PropertyBase>) => {
+  updateProperty: async (id: string, updates: Partial<Property>) => {
+    // This would typically make an API call to update the property
+    // For now, we'll just update it locally
     set(state => ({
-      properties: state.properties.map(property =>
-        property.id === id ? { ...property, ...updatedProperty } : property,
+      properties: state.properties.map(p => 
+        p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
       ),
-      filteredProperties: state.filteredProperties.map(property =>
-        property.id === id ? { ...property, ...updatedProperty } : property,
+      filteredProperties: state.filteredProperties.map(p => 
+        p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
       ),
     }))
   },
 
-  deleteProperty: (id: string) => {
+  deleteProperty: async (id: string) => {
+    // This would typically make an API call to delete the property
+    // For now, we'll just remove it locally
     set(state => ({
-      properties: state.properties.filter(property => property.id !== id),
-      filteredProperties: state.filteredProperties.filter(property => property.id !== id),
+      properties: state.properties.filter(p => p.id !== id),
+      filteredProperties: state.filteredProperties.filter(p => p.id !== id),
     }))
   },
 
   getPropertyById: (id: string) => {
     const { properties } = get()
-    return properties.find(property => property.id === id)
+    return properties.find(p => p.id === id)
+  },
+
+  clearFilters: () => {
+    const { properties } = get()
+    set({
+      searchFilters: {},
+      filteredProperties: properties,
+    })
   },
 }))
 

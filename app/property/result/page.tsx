@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { ArrowDownWideNarrow } from 'lucide-react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Scrollbar, Mousewheel } from 'swiper/modules'
-import { getAllProperties } from '@/data/properties'
+import usePropertiesStore from '@/stores/propertiesStore'
 import MapViewer from '@/components/MapViewer'
 import Pagination from '@/components/Pagination'
 import CardProperty from '@/components/CardProperty'
@@ -13,8 +13,13 @@ import ButtonSecondary from '@/components/ButtonSecondary'
 import ButtonMapViewSwitcher from '@/components/ButtonMapViewSwitcher'
 
 function ResultsPage() {
-  const properties = getAllProperties(10)
+  const { properties, isLoading, loadProperties, pagination, mapData } = usePropertiesStore()
   const [isMapView, setIsMapView] = useState(false)
+
+  useEffect(() => {
+    // Load properties when component mounts
+    loadProperties({ limit: 10, page: 1 })
+  }, [loadProperties])
 
   const toggleView = () => {
     setIsMapView(!isMapView)
@@ -29,23 +34,74 @@ function ResultsPage() {
     return grouped
   }
 
-  // Map configuration
-  const mapCenter = { lng: -74.006, lat: 40.7128 } // New York City center
-  const mapZoom = 12
+  // Map configuration - use real data from backend if available (memoized)
+  const mapCenter = useMemo(() => {
+    console.log('Computing map center with mapData:', mapData)
+    
+    if (mapData?.latMean && mapData?.longMean) {
+      console.log('Using API map center:', { lng: mapData.longMean, lat: mapData.latMean })
+      return { lng: mapData.longMean, lat: mapData.latMean }
+    }
+    
+    console.log('Using fallback map center')
+    return { lng: -74.006, lat: 40.7128 } // Fallback to NYC center
+  }, [mapData])
+  
+  const mapZoom = mapData?.depth || 12
 
-  // Create markers from properties data (simulated coordinates around NYC)
-  const propertyMarkers = properties.map((property, index) => ({
-    lng: mapCenter.lng + (Math.random() - 0.5) * 0.02, // Random offset around center
-    lat: mapCenter.lat + (Math.random() - 0.5) * 0.02,
-    popup: `
-      <div class="p-2">
-        <h3 class="font-semibold text-sm">${property.title}</h3>
-        <p class="text-xs text-gray-600">${property.location}</p>
-        <p class="text-sm font-bold text-teal-600">$${property.price}/month</p>
-      </div>
-    `,
-    color: '#0D9488', // Teal color to match the theme
-  }))
+  console.log('Map center result:', mapCenter)
+  console.log('Map zoom:', mapZoom)
+
+  // Create markers from properties data (memoized to prevent re-rendering)
+  const propertyMarkers = useMemo(() => {
+    return properties.map((property, index) => {
+      let lng, lat
+      
+      if (property.longitude && property.latitude) {
+        // Use real coordinates if available
+        lng = property.longitude
+        lat = property.latitude
+      } else {
+        // Fallback: distribute properties in a grid pattern around map center
+        const gridSize = Math.ceil(Math.sqrt(properties.length))
+        const gridX = index % gridSize
+        const gridY = Math.floor(index / gridSize)
+        const offsetRange = 0.02 // Roughly 2km range
+        
+        lng = mapCenter.lng + (gridX - gridSize / 2) * (offsetRange / gridSize) + (Math.random() - 0.5) * 0.005
+        lat = mapCenter.lat + (gridY - gridSize / 2) * (offsetRange / gridSize) + (Math.random() - 0.5) * 0.005
+      }
+
+      return {
+        lng,
+        lat,
+        popup: `
+          <div class="p-3 max-w-xs">
+            <h3 class="font-semibold text-sm mb-1">${property.title}</h3>
+            <p class="text-xs text-gray-600 mb-1">${property.address}</p>
+            <p class="text-xs text-gray-600 mb-2">${property.city}, ${property.state}</p>
+            <div class="flex justify-between items-center">
+              <p class="text-sm font-bold text-teal-600">$${property.price}/month</p>
+              <p class="text-xs text-gray-500">${property.bedrooms}br ${property.bathrooms}ba</p>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">${property.areaSqm || property.area || 0} sq ft</p>
+            <div class="mt-2">
+              <a href="/property/${property.id}" class="text-xs text-teal-600 hover:text-teal-700 font-medium">
+                View Details →
+              </a>
+            </div>
+          </div>
+        `,
+        color: '#0D9488', // Teal color to match the theme
+        propertyId: property.id, // Add property ID for potential click handling
+      }
+    })
+  }, [properties, mapCenter])
+
+  // Debug logging
+  console.log('Properties count:', properties.length)
+  console.log('Map center:', mapCenter)
+  console.log('Property markers:', propertyMarkers)
 
   return (
     <ContentWrapper searchBoxType="compact">
@@ -242,15 +298,40 @@ function ResultsPage() {
 
         {/* Map Results */}
         <div className={`w-full md:w-1/2 ${isMapView ? 'block' : 'hidden md:block'}`}>
-          {/*<div className="w-full h-[80vh] bg-gray-500"></div>*/}
-          <MapViewer
-            center={mapCenter}
-            zoom={mapZoom}
-            markers={propertyMarkers}
-            onMapClick={(coords) => console.log('Clicked:', coords)}
-            className="shadow-lg"
-            height="80vh"
-          />
+          {isLoading ? (
+            <div className="w-full h-[80vh] bg-gray-100 flex items-center justify-center rounded-lg">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading properties...</p>
+              </div>
+            </div>
+          ) : properties.length === 0 ? (
+            <div className="w-full h-[80vh] bg-gray-100 flex items-center justify-center rounded-lg">
+              <div className="text-center">
+                <p className="text-gray-600 text-lg mb-2">No properties found</p>
+                <p className="text-gray-500">Try adjusting your search criteria</p>
+              </div>
+            </div>
+          ) : (
+            // Only render MapViewer if we're not loading and have map data
+            !isLoading ? (
+              <MapViewer
+                center={mapCenter}
+                zoom={mapZoom}
+                markers={propertyMarkers}
+                onMapClick={(coords) => console.log('Clicked:', coords)}
+                className="shadow-lg"
+                height="80vh"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
+                <div className="text-center">
+                  <p className="text-gray-600 text-lg mb-2">Loading map...</p>
+                  <p className="text-gray-500">Fetching location data</p>
+                </div>
+              </div>
+            )
+          )}
         </div>
       </div>
 

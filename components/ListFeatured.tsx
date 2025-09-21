@@ -1,13 +1,37 @@
 'use client'
 
+import { useEffect } from 'react'
 import CardProperty from '@/components/CardProperty'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { FreeMode } from 'swiper/modules'
-import { getAllProperties } from '@/data/properties'
+import usePropertiesStore from '@/stores/propertiesStore'
 
 
 function ListFeatured() {
-  const sampleProperties = getAllProperties()
+  const { properties, isLoading, loadProperties } = usePropertiesStore()
+
+  useEffect(() => {
+    // Load featured properties
+    loadProperties({ limit: 8, page: 1 })
+  }, [loadProperties])
+
+  if (isLoading) {
+    return (
+      <div className="py-16 px-4 md:px-16">
+        <div className="mb-12">
+          <h2 className="font-serif text-3xl text-teal-900 mb-4">
+            Featured Properties For You
+          </h2>
+          <p className="text-base text-teal-800 max-w-2xl">
+            A selection of verified properties in the most sought-after locations
+          </p>
+        </div>
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="py-16 px-4 md:px-16">
@@ -50,7 +74,7 @@ function ListFeatured() {
         }}
         className="!overflow-visible"
       >
-        {sampleProperties.map((property) => (
+        {properties.map((property) => (
           <SwiperSlide key={property.id}>
             <CardProperty property={property} />
           </SwiperSlide>

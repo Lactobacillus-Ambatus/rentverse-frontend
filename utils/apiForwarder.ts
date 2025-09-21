@@ -41,7 +41,7 @@ export async function forwardRequest(
   const timeoutId = setTimeout(() => controller.abort(), timeout)
   requestOptions.signal = controller.signal
 
-  let lastError: Error
+  let lastError: Error = new Error('Unknown error')
   let attempt = 0
 
   while (attempt <= retries) {
@@ -64,7 +64,7 @@ export async function forwardRequest(
   }
 
   clearTimeout(timeoutId)
-  throw lastError!
+  throw new Error(lastError?.message || 'Request failed')
 }
 
 /**
@@ -88,6 +88,7 @@ export function createErrorResponse(
     message,
     error: error?.message || 'Unknown error',
     timestamp: new Date().toISOString(),
+    status,
   }
 }
 
@@ -107,4 +108,50 @@ export function createCacheHeaders(
   }
 
   return headers
+}
+
+/**
+ * Properties API request forwarder
+ */
+export async function propertiesApiForwarder(
+  request: Request,
+  endpoint: string,
+): Promise<Response> {
+  try {
+    const { searchParams } = new URL(request.url)
+    const queryString = searchParams.toString()
+    const fullEndpoint = queryString ? `${endpoint}?${queryString}` : endpoint
+
+    const response = await forwardRequest(fullEndpoint, {
+      method: request.method,
+      headers: getAuthHeader(request),
+    })
+
+    // Handle non-JSON responses
+    const contentType = response.headers.get('Content-Type') || ''
+    if (!contentType.includes('application/json')) {
+      return new Response(await response.text(), {
+        status: response.status,
+        headers: response.headers,
+      })
+    }
+
+    // Return the JSON response
+    const data = await response.json()
+    return Response.json(data, {
+      status: response.status,
+    })
+
+  } catch (error) {
+    console.error('Properties API forwarding error:', error)
+    
+    return Response.json(
+      createErrorResponse(
+        'Failed to fetch properties',
+        error instanceof Error ? error : undefined,
+        500
+      ),
+      { status: 500 }
+    )
+  }
 }

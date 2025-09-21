@@ -1,9 +1,9 @@
 'use client'
 
 import clsx from 'clsx'
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { Search } from 'lucide-react'
-import { useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { getAllLocations, getAllPropertyTypes } from '@/data/searchbox-options'
 import usePropertiesStore from '@/stores/propertiesStore'
 
@@ -13,6 +13,7 @@ function SearchBoxPropertyMini(props: React.HTMLAttributes<HTMLDivElement>): Rea
     isDurationOpen,
     isTypeOpen,
     whereValue,
+    typeValue,
     setIsWhereOpen,
     setIsDurationOpen,
     setIsTypeOpen,
@@ -21,14 +22,42 @@ function SearchBoxPropertyMini(props: React.HTMLAttributes<HTMLDivElement>): Rea
     getTypeText,
     handleLocationSelect,
     handleTypeSelect,
+    searchProperties,
   } = usePropertiesStore()
 
+  const router = useRouter()
   const whereRef = useRef<HTMLDivElement>(null)
   const durationRef = useRef<HTMLDivElement>(null)
   const typeRef = useRef<HTMLDivElement>(null)
   const locations = getAllLocations()
   const propertyTypes = getAllPropertyTypes()
   const { className, ...propsRest } = props
+
+  // Handle search functionality
+  const handleSearch = async () => {
+    const filters = {
+      city: whereValue || undefined,
+      type: typeValue || undefined,
+      page: 1,
+      limit: 10,
+    }
+    
+    // Perform search and navigate to results page
+    await searchProperties(filters)
+    router.push('/property/result')
+  }
+
+  // Handle location selection without triggering search
+  const handleLocationSelectOnly = (location: { name: string }) => {
+    handleLocationSelect(location)
+    setIsWhereOpen(false)
+  }
+
+  // Handle type selection without triggering search
+  const handleTypeSelectOnly = (type: { name: string }) => {
+    handleTypeSelect(type)
+    setIsTypeOpen(false)
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -68,12 +97,20 @@ function SearchBoxPropertyMini(props: React.HTMLAttributes<HTMLDivElement>): Rea
               <span className="text-sm">🏛️</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-medium text-slate-900 truncate">
-                {whereValue || 'Where'}
-              </div>
-              <div className="text-xs text-slate-500 truncate">
-                {whereValue ? 'Location' : 'Search destinations'}
-              </div>
+              <div className="text-xs font-medium text-slate-900 mb-1">Where</div>
+              <input
+                type="text"
+                placeholder="Search destinations"
+                value={whereValue}
+                onChange={(e) => setWhereValue(e.target.value)}
+                onFocus={() => setIsWhereOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch()
+                  }
+                }}
+                className="w-full text-xs text-slate-600 placeholder-slate-400 bg-transparent border-none outline-none font-medium"
+              />
             </div>
           </div>
         </div>
@@ -107,7 +144,8 @@ function SearchBoxPropertyMini(props: React.HTMLAttributes<HTMLDivElement>): Rea
         {/* Search Button */}
         <div className="ml-2 pr-2">
           <button
-            className="flex items-center justify-center w-8 h-8 bg-teal-600 hover:bg-teal-700 rounded-full transition-colors">
+            onClick={handleSearch}
+            className="flex items-center justify-center w-8 h-8 bg-teal-600 hover:bg-teal-700 rounded-full transition-colors cursor-pointer">
             <Search size={14} className="text-white" />
           </button>
         </div>
@@ -124,7 +162,7 @@ function SearchBoxPropertyMini(props: React.HTMLAttributes<HTMLDivElement>): Rea
               {whereValue && (
                 <div
                   className="flex items-center p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors border-b border-slate-100 mb-2"
-                  onClick={() => handleLocationSelect({ name: whereValue })}
+                  onClick={() => handleLocationSelectOnly({ name: whereValue })}
                 >
                   <div className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg mr-3">
                     <Search size={14} className="text-slate-600" />
@@ -146,7 +184,7 @@ function SearchBoxPropertyMini(props: React.HTMLAttributes<HTMLDivElement>): Rea
                   <div
                     key={index}
                     className="flex items-center p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
-                    onClick={() => handleLocationSelect(location)}
+                    onClick={() => handleLocationSelectOnly(location)}
                   >
                     <div className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg mr-3">
                       <span className="text-sm">{location.icon}</span>
@@ -225,7 +263,7 @@ function SearchBoxPropertyMini(props: React.HTMLAttributes<HTMLDivElement>): Rea
                 <div
                   key={index}
                   className="flex items-center p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
-                  onClick={() => handleTypeSelect(type)}
+                  onClick={() => handleTypeSelectOnly(type)}
                 >
                   <div className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg mr-3">
                     <span className="text-sm">{type.icon}</span>
