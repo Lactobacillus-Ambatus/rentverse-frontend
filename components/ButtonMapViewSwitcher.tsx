@@ -9,7 +9,7 @@ interface ButtonMapviewSwitcher extends React.HTMLAttributes<HTMLSpanElement> {
   isMapView: boolean
 }
 
-function ButtonMapViewSwitcher({ onClick, isMapView, className, ...otherProps }: ButtonMapviewSwitcher) {
+function ButtonMapViewSwitcher({ onClick, isMapView, className }: ButtonMapviewSwitcher) {
   // Extract only the props that are safe to pass to Lucide icons
   const iconProps = {
     size: 20,

@@ -13,7 +13,7 @@ import ButtonSecondary from '@/components/ButtonSecondary'
 import ButtonMapViewSwitcher from '@/components/ButtonMapViewSwitcher'
 
 function ResultsPage() {
-  const { properties, isLoading, loadProperties, pagination, mapData } = usePropertiesStore()
+  const { properties, isLoading, loadProperties, mapData } = usePropertiesStore()
   const [isMapView, setIsMapView] = useState(false)
 
   useEffect(() => {

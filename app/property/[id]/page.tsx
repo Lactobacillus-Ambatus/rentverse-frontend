@@ -6,11 +6,10 @@ import BarProperty from '@/components/BarProperty'
 import ImageGallery from '@/components/ImageGallery'
 import BoxPropertyPrice from '@/components/BoxPropertyPrice'
 import MapViewer from '@/components/MapViewer'
-import { use } from 'react'
 
-function DetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-
+function DetailPage() {
+  // Note: This is a static implementation - in production, you would use the params to fetch specific property data
+  
   const tempImage: [string, string, string, string, string] = [
     'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png',
     'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_ockiwbockiwbocki_vmmlhm.png',
@@ -18,11 +17,6 @@ function DetailPage({ params }: { params: Promise<{ id: string }> }) {
     'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_7seyqi7seyqi7sey_jgzhig.png',
     'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211362/rentverse-rooms/Gemini_Generated_Image_2wt0y22wt0y22wt0_ocdafo.png',
   ]
-
-  const handleBookingClick = () => {
-    // Handle booking logic here
-    console.log('Booking clicked')
-  }
 
   return (
     <ContentWrapper>
