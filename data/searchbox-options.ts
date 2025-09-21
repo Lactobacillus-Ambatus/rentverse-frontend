@@ -111,3 +111,8 @@ export const getAllLocations: GetAllLocationsType = () => {
 export const getAllPropertyTypes: GetAllPropertyTypesType = () => {
   return propertyTypes
 }
+
+// Property types for listing creation (excludes generic "Property" option)
+export const getPropertyTypesForListing: GetAllPropertyTypesType = () => {
+  return propertyTypes.filter(type => type.name !== 'Property')
+}

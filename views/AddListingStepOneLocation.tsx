@@ -2,18 +2,22 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { ChevronDown, MapPin } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import * as maptilersdk from '@maptiler/sdk'
-import QuestionnaireWrapper from '@/components/QuestionnaireWrapper'
 import { getAllStates, getDistrictsByState, getLocationsByDistrict } from '@/data/locations'
 import { LocationCoordinates } from '@/types/location'
+import { usePropertyListingStore } from '@/stores/propertyListingStore'
 
 function AddListingStepOneLocation() {
-  const [selectedState, setSelectedState] = useState('')
-  const [selectedDistrict, setSelectedDistrict] = useState('')
-  const [selectedSubdistrict, setSelectedSubdistrict] = useState('')
-  const [streetAddress, setStreetAddress] = useState('')
-  const [houseNumber, setHouseNumber] = useState('')
+  // Store integration
+  const { data, updateData, markStepCompleted, nextStep } = usePropertyListingStore()
+  
+  // Local state for form inputs, initialized from store data
+  const [selectedState, setSelectedState] = useState(data.state || '')
+  const [selectedDistrict, setSelectedDistrict] = useState(data.district || '')
+  const [selectedSubdistrict, setSelectedSubdistrict] = useState(data.subdistrict || '')
+  const [streetAddress, setStreetAddress] = useState(data.streetAddress || '')
+  const [houseNumber, setHouseNumber] = useState(data.houseNumber || '')
 
   // Dropdown states
   const [showStateDropdown, setShowStateDropdown] = useState(false)
@@ -30,6 +34,49 @@ function AddListingStepOneLocation() {
   const states = getAllStates()
   const districts = selectedState ? getDistrictsByState(selectedState) : []
   const subdistricts = selectedState && selectedDistrict ? getLocationsByDistrict(selectedState, selectedDistrict) : []
+
+  // Auto-fill effect when coordinates are available from previous step
+  useEffect(() => {
+    if (data.latitude && data.longitude && data.state && data.district) {
+      // Check if the auto-filled state exists in our database
+      const availableStates = getAllStates()
+      if (availableStates.includes(data.state)) {
+        setSelectedState(data.state)
+        
+        // Check if the auto-filled district exists for this state
+        const availableDistricts = getDistrictsByState(data.state)
+        if (availableDistricts.includes(data.district)) {
+          setSelectedDistrict(data.district)
+          
+          // Check if the auto-filled subdistrict exists for this district
+          const availableSubdistricts = getLocationsByDistrict(data.state, data.district)
+          const subdistrictMatch = availableSubdistricts.find(loc => loc.name === data.subdistrict)
+          if (subdistrictMatch) {
+            setSelectedSubdistrict(data.subdistrict)
+          }
+        }
+        
+        // Always set street address if available
+        if (data.streetAddress) {
+          setStreetAddress(data.streetAddress)
+        }
+      }
+    }
+  }, [data.latitude, data.longitude, data.state, data.district, data.subdistrict, data.streetAddress])
+
+  // Update store when form values change
+  useEffect(() => {
+    const updateObject = {
+      state: selectedState,
+      district: selectedDistrict,
+      subdistrict: selectedSubdistrict,
+      streetAddress,
+      houseNumber,
+    }
+    
+    console.log('Updating store with location data:', updateObject)
+    updateData(updateObject)
+  }, [selectedState, selectedDistrict, selectedSubdistrict, streetAddress, houseNumber, updateData])
 
   // Initialize MapTiler API key
   useEffect(() => {
@@ -153,8 +200,7 @@ function AddListingStepOneLocation() {
   }
 
   return (
-    <QuestionnaireWrapper>
-      <div className="max-w-2xl mx-auto p-8">
+    <div className="max-w-2xl mx-auto p-8">
         <div className="space-y-8">
           {/* Header */}
           <div className="space-y-3">
@@ -286,7 +332,7 @@ function AddListingStepOneLocation() {
             {/* House Number */}
             <div className="space-y-3">
               <label className="block text-lg font-medium text-slate-900">
-                What is the house number in blue or yellow book?
+                What is the house number in blue or yellow book? <span className="text-slate-500 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -337,9 +383,60 @@ function AddListingStepOneLocation() {
               Current position: {mapCenter[1].toFixed(6)}, {mapCenter[0].toFixed(6)}
             </div>
           </div>
+
+          {/* Auto-fill Status */}
+          {data.latitude && data.longitude && (
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <p className="text-green-700">
+                ✓ Address auto-filled from map coordinates
+              </p>
+              <p className="text-sm text-green-600 mt-1">
+                {selectedState && `State: ${selectedState}`}
+                {selectedState && selectedDistrict && ` • District: ${selectedDistrict}`}
+                {selectedState && selectedDistrict && selectedSubdistrict && ` • Subdistrict: ${selectedSubdistrict}`}
+              </p>
+              {data.autoFillDistance && (
+                <p className="text-sm text-green-600 mt-1">
+                  📍 Distance to closest match: {data.autoFillDistance.toFixed(2)}km
+                </p>
+              )}
+              <p className="text-sm text-green-600 mt-1">
+                You can modify the details above if needed
+              </p>
+            </div>
+          )}
+
+          {/* Navigation Controls */}
+          <div className="flex justify-center pt-6">
+            <button
+              onClick={() => {
+                console.log('Location details button clicked:', {
+                  selectedState,
+                  selectedDistrict,
+                  selectedSubdistrict,
+                  canProceed: selectedState && selectedDistrict
+                })
+                
+                // Mark step as completed if required fields are filled
+                if (selectedState && selectedDistrict) {
+                  markStepCompleted(4) // Step 4 is location-details step
+                  nextStep()
+                } else {
+                  console.warn('Cannot proceed: missing required fields')
+                }
+              }}
+              disabled={!selectedState || !selectedDistrict}
+              className={`px-8 py-3 rounded-lg font-medium transition-colors ${
+                selectedState && selectedDistrict
+                  ? 'bg-slate-900 text-white hover:bg-slate-800'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              {selectedState && selectedDistrict ? 'Continue' : 'Please select state and district'}
+            </button>
+          </div>
         </div>
       </div>
-    </QuestionnaireWrapper>
   )
 }
 

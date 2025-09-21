@@ -1,28 +1,53 @@
 'use client'
 
-import { useState } from 'react'
-import QuestionnaireWrapper from '@/components/QuestionnaireWrapper'
+import { useEffect } from 'react'
+import { usePropertyListingStore } from '../stores/propertyListingStore'
 
 function AddListingStepOneBasic() {
-  const [bedrooms, setBedrooms] = useState(0)
-  const [bathrooms, setBathrooms] = useState(1)
-  const [indoorArea, setIndoorArea] = useState('')
-  const [outdoorArea, setOutdoorArea] = useState('')
-  const [plotSize, setPlotSize] = useState('')
+  const { data, updateData } = usePropertyListingStore()
 
-  const incrementCount = (value: number, setter: (val: number) => void) => {
-    setter(value + 1)
+  // Initialize data if not set
+  useEffect(() => {
+    if (data.bedrooms === 0 && data.bathrooms === 0 && data.areaSqm === 0) {
+      updateData({
+        bedrooms: 1,
+        bathrooms: 1,
+        areaSqm: 0
+      })
+    }
+  }, [data.bedrooms, data.bathrooms, data.areaSqm, updateData])
+
+  const incrementCount = (field: 'bedrooms' | 'bathrooms', value: number) => {
+    console.log(`Incrementing ${field} from ${value} to ${value + 1}`)
+    updateData({ [field]: value + 1 })
   }
 
-  const decrementCount = (value: number, setter: (val: number) => void) => {
+  const decrementCount = (field: 'bedrooms' | 'bathrooms', value: number) => {
     if (value > 0) {
-      setter(value - 1)
+      console.log(`Decrementing ${field} from ${value} to ${value - 1}`)
+      updateData({ [field]: value - 1 })
     }
   }
 
+  const handleAreaChange = (value: string) => {
+    const numValue = value === '' ? 0 : parseFloat(value)
+    if (!isNaN(numValue)) {
+      console.log(`Updating areaSqm to ${numValue}`)
+      updateData({ areaSqm: numValue })
+    }
+  }
+
+  // Debug log current data
+  useEffect(() => {
+    console.log('Basic info component data:', {
+      bedrooms: data.bedrooms,
+      bathrooms: data.bathrooms,
+      areaSqm: data.areaSqm
+    })
+  }, [data.bedrooms, data.bathrooms, data.areaSqm])
+
   return (
-    <QuestionnaireWrapper>
-      <div className="max-w-6xl w-full mx-auto p-12">
+    <div className="max-w-6xl w-full mx-auto p-12">
         <div className="space-y-8">
           {/* Header */}
           <div className="space-y-3">
@@ -41,17 +66,17 @@ function AddListingStepOneBasic() {
               <span className="text-lg text-slate-900">Bedrooms</span>
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => decrementCount(bedrooms, setBedrooms)}
+                  onClick={() => decrementCount('bedrooms', data.bedrooms)}
                   className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:border-slate-400 transition-colors"
-                  disabled={bedrooms === 0}
+                  disabled={data.bedrooms === 0}
                 >
                   <span className="text-lg leading-none">−</span>
                 </button>
                 <span className="text-lg font-medium text-slate-900 min-w-[3rem] text-center">
-                  {bedrooms === 0 ? 'Studio' : bedrooms}
+                  {data.bedrooms === 0 ? 'Studio' : data.bedrooms}
                 </span>
                 <button
-                  onClick={() => incrementCount(bedrooms, setBedrooms)}
+                  onClick={() => incrementCount('bedrooms', data.bedrooms)}
                   className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:border-slate-400 transition-colors"
                 >
                   <span className="text-lg leading-none">+</span>
@@ -64,17 +89,17 @@ function AddListingStepOneBasic() {
               <span className="text-lg text-slate-900">Bathrooms</span>
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => decrementCount(bathrooms, setBathrooms)}
+                  onClick={() => decrementCount('bathrooms', data.bathrooms)}
                   className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:border-slate-400 transition-colors"
-                  disabled={bathrooms === 0}
+                  disabled={data.bathrooms === 0}
                 >
                   <span className="text-lg leading-none">−</span>
                 </button>
                 <span className="text-lg font-medium text-slate-900 min-w-[2rem] text-center">
-                  {bathrooms}
+                  {data.bathrooms}
                 </span>
                 <button
-                  onClick={() => incrementCount(bathrooms, setBathrooms)}
+                  onClick={() => incrementCount('bathrooms', data.bathrooms)}
                   className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:border-slate-400 transition-colors"
                 >
                   <span className="text-lg leading-none">+</span>
@@ -82,70 +107,29 @@ function AddListingStepOneBasic() {
               </div>
             </div>
 
-            {/* Indoor area */}
+            {/* Total area */}
             <div className="space-y-3">
-              <label className="block text-lg text-slate-900">Indoor area</label>
+              <label htmlFor="total-area" className="block text-lg text-slate-900">Total area</label>
               <div className="relative">
                 <input
+                  id="total-area"
                   type="number"
-                  value={indoorArea}
-                  onChange={(e) => setIndoorArea(e.target.value)}
+                  value={data.areaSqm || ''}
+                  onChange={(e) => handleAreaChange(e.target.value)}
                   placeholder="0"
                   className="w-full px-4 py-3 pr-12 text-base border border-slate-200 rounded-full bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
                 <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500">
-                  Sqft
+                  Sqm
                 </span>
               </div>
               <p className="text-sm text-slate-500">
-                All space between a floor and a ceiling that is covered by walls, doorways, or windows.
-              </p>
-            </div>
-
-            {/* Outdoor area */}
-            <div className="space-y-3">
-              <label className="block text-lg text-slate-900">Outdoor area</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={outdoorArea}
-                  onChange={(e) => setOutdoorArea(e.target.value)}
-                  placeholder="0"
-                  className="w-full px-4 py-3 pr-12 text-base border border-slate-200 rounded-full bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-                <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500">
-                  Sqft
-                </span>
-              </div>
-              <p className="text-sm text-slate-500">
-                Combined size of the terrace, pool, parking area, and sala. Do not include the size of the garden.
-              </p>
-            </div>
-
-            {/* Plot size */}
-            <div className="space-y-3">
-              <label className="block text-lg text-slate-900">Plot size</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={plotSize}
-                  onChange={(e) => setPlotSize(e.target.value)}
-                  placeholder="0"
-                  className="w-full px-4 py-3 pr-12 text-base border border-slate-200 rounded-full bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-                <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500">
-                  Sqft
-                </span>
-              </div>
-              <p className="text-sm text-slate-500">
-                A land plot is a parcel of land that has defined boundaries (or borders) and is registered with the
-                local government.
+                Total area of the property in square meters.
               </p>
             </div>
           </div>
         </div>
       </div>
-    </QuestionnaireWrapper>
   )
 }
 

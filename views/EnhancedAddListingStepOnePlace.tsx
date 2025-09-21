@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { getPropertyTypesForListing } from '@/data/searchbox-options'
 import { usePropertyListingStore } from '@/stores/propertyListingStore'
 
-function AddListingStepOnePlace() {
+function EnhancedAddListingStepOnePlace() {
   const { data, updateData, markStepCompleted } = usePropertyListingStore()
   const [selectedPropertyType, setSelectedPropertyType] = useState<string>(data.propertyType || '')
   const propertyTypes = getPropertyTypesForListing() // Using the filtered list
@@ -14,16 +14,9 @@ function AddListingStepOnePlace() {
     if (selectedPropertyType) {
       updateData({ propertyType: selectedPropertyType })
       // Mark this step as completed when a valid selection is made
-      markStepCompleted(2) // This is step index 2 in the sequence (property-type step)
+      markStepCompleted(2) // This is step index 2 in the sequence
     }
   }, [selectedPropertyType, updateData, markStepCompleted])
-
-  // Load initial value from store on component mount
-  useEffect(() => {
-    if (data.propertyType && !selectedPropertyType) {
-      setSelectedPropertyType(data.propertyType)
-    }
-  }, [data.propertyType, selectedPropertyType])
 
   const handlePropertyTypeSelect = (propertyName: string) => {
     setSelectedPropertyType(propertyName)
@@ -85,4 +78,4 @@ function AddListingStepOnePlace() {
   )
 }
 
-export default AddListingStepOnePlace
+export default EnhancedAddListingStepOnePlace

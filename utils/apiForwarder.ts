@@ -26,14 +26,18 @@ export async function forwardRequest(
     console.log(`[API] ${options.method || 'GET'} ${url}`)
   }
 
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-    ...fetchOptions.headers,
+  // Don't set Content-Type for FormData - let the browser set it with boundary
+  const defaultHeaders: Record<string, string> = {}
+  if (!(fetchOptions.body instanceof FormData)) {
+    defaultHeaders['Content-Type'] = 'application/json'
   }
 
   const requestOptions: RequestInit = {
     ...fetchOptions,
-    headers: defaultHeaders,
+    headers: {
+      ...defaultHeaders,
+      ...fetchOptions.headers,
+    },
   }
 
   // Add timeout using AbortController
@@ -46,11 +50,13 @@ export async function forwardRequest(
 
   while (attempt <= retries) {
     try {
+      console.log(`[API] Attempt ${attempt + 1}/${retries + 1} to ${url}`)
       const response = await fetch(url, requestOptions)
       clearTimeout(timeoutId)
       return response
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Unknown error')
+      console.error(`[API] Attempt ${attempt + 1} failed:`, lastError.message)
       attempt++
 
       // Don't retry on timeout or if we've exhausted retries
@@ -64,7 +70,9 @@ export async function forwardRequest(
   }
 
   clearTimeout(timeoutId)
-  throw new Error(lastError?.message || 'Request failed')
+  const finalError = new Error(`Request failed after ${retries + 1} attempts to ${url}: ${lastError?.message || 'Unknown error'}`)
+  console.error('[API] Final error:', finalError.message)
+  throw finalError
 }
 
 /**
@@ -122,9 +130,20 @@ export async function propertiesApiForwarder(
     const queryString = searchParams.toString()
     const fullEndpoint = queryString ? `${endpoint}?${queryString}` : endpoint
 
+    // For POST/PUT/PATCH requests, include the body
+    const body = ['POST', 'PUT', 'PATCH'].includes(request.method) 
+      ? await request.text() 
+      : undefined
+
     const response = await forwardRequest(fullEndpoint, {
       method: request.method,
-      headers: getAuthHeader(request),
+      headers: {
+        ...getAuthHeader(request),
+        ...(request.headers.get('Content-Type') && {
+          'Content-Type': request.headers.get('Content-Type')!
+        })
+      },
+      body,
     })
 
     // Handle non-JSON responses

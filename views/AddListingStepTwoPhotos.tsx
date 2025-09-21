@@ -1,22 +1,45 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { X, Plus, Upload } from 'lucide-react'
-import QuestionnaireWrapper from '@/components/QuestionnaireWrapper'
+import { X, Plus, Upload, AlertCircle } from 'lucide-react'
+import { usePropertyListingStore } from '@/stores/propertyListingStore'
+import { uploadImages, validateImageFiles } from '@/utils/uploadService'
 
 interface PhotoFile {
   id: string
   file: File
   preview: string
+  uploaded?: boolean
+  uploadUrl?: string
+  isUploading?: boolean
+  error?: string
 }
 
 function AddListingStepTwoPhotos() {
+  const { data, updateData } = usePropertyListingStore()
   const [selectedPhotos, setSelectedPhotos] = useState<PhotoFile[]>([])
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Load existing images from store on mount
+  useEffect(() => {
+    if (data.images && data.images.length > 0) {
+      // Convert stored image URLs to PhotoFile objects for display
+      const existingPhotos: PhotoFile[] = data.images.map((url, index) => ({
+        id: `existing-${index}`,
+        file: new File([], `image-${index}.jpg`), // Placeholder file
+        preview: url,
+        uploaded: true,
+        uploadUrl: url,
+      }))
+      setSelectedPhotos(existingPhotos)
+    }
+  }, [data.images])
 
   const handleAddPhotos = () => {
     console.log('handleAddPhotos called - setting showUploadModal to true')
@@ -30,22 +53,32 @@ function AddListingStepTwoPhotos() {
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return
 
-    const newPhotos: PhotoFile[] = []
+    const fileArray = Array.from(files)
+    
+    // Validate files
+    const { valid, invalid } = validateImageFiles(fileArray)
+    
+    // Show validation errors if any
+    if (invalid.length > 0) {
+      const errors = invalid.map(item => `${item.file.name}: ${item.reason}`)
+      setValidationErrors(errors)
+      console.warn('Invalid files:', invalid)
+    } else {
+      setValidationErrors([])
+    }
 
-    Array.from(files).forEach(file => {
-      if (file.type.startsWith('image/')) {
-        const preview = URL.createObjectURL(file)
-        newPhotos.push({
-          id: Math.random().toString(36).substr(2, 9),
-          file,
-          preview,
-        })
-      }
-    })
+    // Only process valid files
+    if (valid.length > 0) {
+      const newPhotos: PhotoFile[] = valid.map(file => ({
+        id: Math.random().toString(36).substring(2, 9),
+        file,
+        preview: URL.createObjectURL(file),
+        uploaded: false,
+        isUploading: false,
+      }))
 
-    setSelectedPhotos(prev => [...prev, ...newPhotos])
-    setShowUploadModal(false)
-    if (newPhotos.length > 0) {
+      setSelectedPhotos(prev => [...prev, ...newPhotos])
+      setShowUploadModal(false)
       setShowPreviewModal(true)
     }
   }
@@ -100,14 +133,71 @@ function AddListingStepTwoPhotos() {
     setShowPreviewModal(false)
   }
 
-  const handleUpload = () => {
-    // This would be where actual upload logic goes
-    console.log('Upload photos:', selectedPhotos)
-    setShowPreviewModal(false)
+  const handleUpload = async () => {
+    const filesToUpload = selectedPhotos.filter(photo => !photo.uploaded)
+    
+    if (filesToUpload.length === 0) {
+      // All photos are already uploaded, just close modal
+      setShowPreviewModal(false)
+      return
+    }
+
+    setIsUploading(true)
+    
+    try {
+      // Upload the images
+      const result = await uploadImages(
+        filesToUpload.map(photo => photo.file),
+        {
+          optimize: true,
+          onProgress: (progress) => {
+            // Update individual photo upload status
+            setSelectedPhotos(prev => prev.map(photo => {
+              const progressItem = progress.find(p => p.file === photo.file)
+              if (progressItem) {
+                return {
+                  ...photo,
+                  isUploading: progressItem.status === 'uploading',
+                  uploaded: progressItem.status === 'completed',
+                  uploadUrl: progressItem.result?.data.url,
+                  error: progressItem.error,
+                }
+              }
+              return photo
+            }))
+          }
+        }
+      )
+
+      if (result.success) {
+        // Get all uploaded URLs from the result
+        const newlyUploadedUrls = result.data
+          .filter(uploadResult => uploadResult.success)
+          .map(uploadResult => uploadResult.data.url)
+
+        // Get existing uploaded URLs from the current selectedPhotos
+        const existingUrls = selectedPhotos
+          .filter(photo => photo.uploaded && photo.uploadUrl)
+          .map(photo => photo.uploadUrl!)
+
+        // Combine all URLs
+        const allImageUrls = [...existingUrls, ...newlyUploadedUrls]
+
+        updateData({ images: allImageUrls })
+        console.log('Images uploaded successfully:', allImageUrls)
+      }
+
+      setShowPreviewModal(false)
+    } catch (error) {
+      console.error('Upload failed:', error)
+      setValidationErrors([error instanceof Error ? error.message : 'Upload failed'])
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   return (
-    <QuestionnaireWrapper>
+    <>
       <div className="max-w-6xl mx-auto p-8">
         <div className="space-y-8">
           {/* Header */}
@@ -119,6 +209,23 @@ function AddListingStepTwoPhotos() {
               You&apos;ll need 5 photos to get started. You can add more or make changes later.
             </p>
           </div>
+
+          {/* Validation Errors */}
+          {validationErrors.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-red-800">Upload Errors</h4>
+                  <ul className="mt-1 text-sm text-red-700 space-y-1">
+                    {validationErrors.map((error) => (
+                      <li key={error}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Photo Upload Section */}
           <div className="flex flex-col items-center justify-center py-16 space-y-8">
@@ -316,12 +423,39 @@ function AddListingStepTwoPhotos() {
                         height={200}
                         className="w-full h-full object-cover"
                       />
+                      
+                      {/* Upload overlay */}
+                      {photo.isUploading && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                            <span className="text-sm">Uploading...</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Upload success indicator */}
+                      {photo.uploaded && !photo.isUploading && (
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+
+                      {/* Upload error indicator */}
+                      {photo.error && (
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center">
+                          <AlertCircle size={14} />
+                        </div>
+                      )}
                     </div>
 
                     {/* Remove Button */}
                     <button
                       onClick={() => handleRemovePhoto(photo.id)}
                       className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-700 z-10"
+                      disabled={photo.isUploading}
                     >
                       <X size={14} />
                     </button>
@@ -341,21 +475,32 @@ function AddListingStepTwoPhotos() {
               <button
                 onClick={handleClosePreviewModal}
                 className="px-6 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+                disabled={isUploading}
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpload}
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
-                disabled={selectedPhotos.length === 0}
+                className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
+                disabled={selectedPhotos.length === 0 || isUploading}
               >
-                Upload
+                {isUploading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={16} />
+                    <span>Upload {selectedPhotos.filter(p => !p.uploaded).length} photos</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
-    </QuestionnaireWrapper>
+    </>
   )
 }
 

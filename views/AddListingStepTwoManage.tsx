@@ -1,24 +1,51 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { Plus, MoreHorizontal, ImageIcon, X } from 'lucide-react'
 import ButtonCircle from '@/components/ButtonCircle'
-import QuestionnaireWrapper from '@/components/QuestionnaireWrapper'
+import { usePropertyListingStore } from '@/stores/propertyListingStore'
+import { uploadSingleImageToCloudinary } from '@/utils/uploadService'
 
 interface PhotoItem {
   id: string
-  file: File
-  preview: string
+  file?: File  // Optional - only for newly uploaded files
+  preview?: string  // Optional - for local file previews
+  url?: string  // Optional - for already uploaded photos
   isCover: boolean
+  isUploading?: boolean  // Optional - for upload progress
 }
 
 function AddListingStepTwoManage() {
+  const { data, updateData } = usePropertyListingStore()
   const [photos, setPhotos] = useState<PhotoItem[]>([])
   const [showDropdown, setShowDropdown] = useState<string | null>(null)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Load existing photos from store on mount
+  useEffect(() => {
+    if (data.images && data.images.length > 0) {
+      const existingPhotos: PhotoItem[] = data.images.map((url, index) => ({
+        id: `existing-${index}`,
+        url: url,
+        isCover: index === 0, // First photo is cover by default
+      }))
+      setPhotos(existingPhotos)
+    }
+  }, [data.images])
+
+  // Update store whenever photos change
+  useEffect(() => {
+    const uploadedUrls = photos
+      .filter(photo => photo.url && !photo.isUploading)
+      .map(photo => photo.url!)
+    
+    if (uploadedUrls.length > 0) {
+      updateData({ images: uploadedUrls })
+    }
+  }, [photos, updateData])
 
   // Create array of 5 slots (minimum required)
   const photoSlots = Array.from({ length: 5 }, (_, index) => {
@@ -33,26 +60,49 @@ function AddListingStepTwoManage() {
     fileInputRef.current?.click()
   }
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files) return
 
     const newPhotos: PhotoItem[] = []
 
+    // Create preview items first
     Array.from(files).forEach(file => {
       if (file.type.startsWith('image/')) {
         const preview = URL.createObjectURL(file)
         newPhotos.push({
-          id: Math.random().toString(36).substr(2, 9),
+          id: Math.random().toString(36).substring(2, 9),
           file,
           preview,
-          isCover: photos.length === 0 && newPhotos.length === 0, // First photo is cover
+          isCover: photos.length === 0 && newPhotos.length === 0,
+          isUploading: true,
         })
       }
     })
 
+    // Add to photos immediately to show upload progress
     setPhotos(prev => [...prev, ...newPhotos])
-    setShowUploadModal(false) // Close modal after files are selected
+    setShowUploadModal(false)
+
+    // Upload each file to Cloudinary
+    for (const photoItem of newPhotos) {
+      if (photoItem.file) {
+        try {
+          const result = await uploadSingleImageToCloudinary(photoItem.file)
+          
+          // Update the photo with the Cloudinary URL
+          setPhotos(prev => prev.map(photo => 
+            photo.id === photoItem.id 
+              ? { ...photo, url: result.secure_url, isUploading: false }
+              : photo
+          ))
+        } catch (error) {
+          console.error('Upload failed for photo:', error)
+          // Remove failed upload
+          setPhotos(prev => prev.filter(photo => photo.id !== photoItem.id))
+        }
+      }
+    }
   }
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -72,7 +122,7 @@ function AddListingStepTwoManage() {
     e.stopPropagation()
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
@@ -86,17 +136,39 @@ function AddListingStepTwoManage() {
       if (file.type.startsWith('image/')) {
         const preview = URL.createObjectURL(file)
         newPhotos.push({
-          id: Math.random().toString(36).substr(2, 9),
+          id: Math.random().toString(36).substring(2, 9),
           file,
           preview,
           isCover: photos.length === 0 && newPhotos.length === 0,
+          isUploading: true,
         })
       }
     })
 
     if (newPhotos.length > 0) {
+      // Add to photos immediately to show upload progress
       setPhotos(prev => [...prev, ...newPhotos])
-      setShowUploadModal(false) // Close modal after files are dropped
+      setShowUploadModal(false)
+
+      // Upload each file to Cloudinary
+      for (const photoItem of newPhotos) {
+        if (photoItem.file) {
+          try {
+            const result = await uploadSingleImageToCloudinary(photoItem.file)
+            
+            // Update the photo with the Cloudinary URL
+            setPhotos(prev => prev.map(photo => 
+              photo.id === photoItem.id 
+                ? { ...photo, url: result.secure_url, isUploading: false }
+                : photo
+            ))
+          } catch (error) {
+            console.error('Upload failed for photo:', error)
+            // Remove failed upload
+            setPhotos(prev => prev.filter(photo => photo.id !== photoItem.id))
+          }
+        }
+      }
     }
   }
 
@@ -156,15 +228,25 @@ function AddListingStepTwoManage() {
     setShowDropdown(showDropdown === photoId ? null : photoId)
   }
 
+  // Helper function to get the display source for a photo
+  const getPhotoSrc = (photo: PhotoItem): string => {
+    return photo.url || photo.preview || ''
+  }
+
   return (
-    <QuestionnaireWrapper>
+    <>
       <div className="max-w-2xl mx-auto p-8">
         <div className="space-y-8">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-slate-900">
-              Choose at least 5 photos
-            </h2>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900">
+                Manage your photos
+              </h2>
+              <p className="text-slate-600 text-sm mt-1">
+                Upload new photos or manage existing ones
+              </p>
+            </div>
             <ButtonCircle
               icon={<Plus size={20} />}
               onClick={handleAddPhotos}
@@ -178,11 +260,18 @@ function AddListingStepTwoManage() {
               {photoSlots[0] ? (
                 <div className="relative group aspect-[4/3] rounded-xl overflow-hidden bg-slate-100">
                   <Image
-                    src={photoSlots[0].preview}
+                    src={getPhotoSrc(photoSlots[0])}
                     alt="Cover photo"
                     fill
                     className="object-cover"
                   />
+
+                  {/* Upload Progress */}
+                  {photoSlots[0].isUploading && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                      <div className="text-white text-sm">Uploading...</div>
+                    </div>
+                  )}
 
                   {/* Cover Photo Badge */}
                   <div
@@ -237,11 +326,18 @@ function AddListingStepTwoManage() {
                   {photo ? (
                     <div className="relative group aspect-[4/3] rounded-xl overflow-hidden bg-slate-100">
                       <Image
-                        src={photo.preview}
+                        src={getPhotoSrc(photo)}
                         alt={`Photo ${index + 2}`}
                         fill
                         className="object-cover"
                       />
+
+                      {/* Upload Progress */}
+                      {photo.isUploading && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                          <div className="text-white text-sm">Uploading...</div>
+                        </div>
+                      )}
 
                       {/* Options Menu */}
                       <div className="absolute top-3 right-3">
@@ -304,11 +400,18 @@ function AddListingStepTwoManage() {
                   {photo ? (
                     <div className="relative group aspect-[4/3] rounded-xl overflow-hidden bg-slate-100">
                       <Image
-                        src={photo.preview}
+                        src={getPhotoSrc(photo)}
                         alt={`Photo ${index + 4}`}
                         fill
                         className="object-cover"
                       />
+
+                      {/* Upload Progress */}
+                      {photo.isUploading && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                          <div className="text-white text-sm">Uploading...</div>
+                        </div>
+                      )}
 
                       {/* Options Menu */}
                       <div className="absolute top-3 right-3">
@@ -437,18 +540,26 @@ function AddListingStepTwoManage() {
                   {photos.map(photo => (
                     <div key={photo.id} className="relative group">
                       <Image
-                        src={photo.preview}
+                        src={getPhotoSrc(photo)}
                         alt="Selected photo"
                         width={100}
                         height={100}
                         className="object-cover rounded-md"
                       />
 
+                      {/* Upload Progress */}
+                      {photo.isUploading && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                          <div className="text-white text-xs">Uploading...</div>
+                        </div>
+                      )}
+
                       {/* Remove Button */}
                       <button
                         onClick={() => handleDelete(photo.id)}
                         className="absolute top-1 right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-red-50 transition-all"
                         title="Remove photo"
+                        disabled={photo.isUploading}
                       >
                         <X size={16} className="text-red-600" />
                       </button>
@@ -476,7 +587,7 @@ function AddListingStepTwoManage() {
           </div>
         </div>
       )}
-    </QuestionnaireWrapper>
+    </>
   )
 }
 

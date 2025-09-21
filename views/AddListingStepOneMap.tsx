@@ -1,23 +1,82 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { MapPin } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { MapPin, Navigation } from 'lucide-react'
 import * as maptilersdk from '@maptiler/sdk'
-import QuestionnaireWrapper from '@/components/QuestionnaireWrapper'
 import { getPopularLocations } from '@/data/popular-locations'
 import { LocationBaseType } from '@/types/location'
+import { usePropertyListingStore } from '@/stores/propertyListingStore'
+import { reverseGeocode, isValidMalaysiaCoordinates, formatCoordinates } from '@/utils/geocoding'
 
 function AddListingStepOneMap() {
+  // Store integration
+  const { data, updateData, markStepCompleted, nextStep } = usePropertyListingStore()
+  
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedLocation, setSelectedLocation] = useState<LocationBaseType | null>(null)
   const [showDropdown, setShowDropdown] = useState(false)
   const [filteredLocations, setFilteredLocations] = useState<LocationBaseType[]>([])
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false)
+  const [manualMode, setManualMode] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<maptilersdk.Map | null>(null)
   const marker = useRef<maptilersdk.Marker | null>(null)
 
   const popularLocations = getPopularLocations()
+
+  // Auto-fill address from coordinates
+  const handleAutoFillAddress = useCallback(async (lat: number, lng: number) => {
+    if (!isValidMalaysiaCoordinates(lat, lng)) {
+      console.warn('Coordinates are outside Malaysia bounds')
+      return
+    }
+
+    setIsGeocodingLoading(true)
+    try {
+      const result = await reverseGeocode(lat, lng)
+      if (result.success && result.address) {
+        updateData({
+          latitude: lat,
+          longitude: lng,
+          district: result.address.district,
+          subdistrict: result.address.subdistrict,
+          state: result.address.state,
+          city: result.address.city,
+          streetAddress: result.address.streetAddress,
+          autoFillDistance: result.distance,
+        })
+        
+        // Mark this step as completed since coordinates are selected
+        markStepCompleted(3) // Step 3 is location-map step
+        
+        console.log('Distance-based auto-fill successful:', {
+          state: result.address.state,
+          district: result.address.district,
+          subdistrict: result.address.subdistrict,
+          distance: result.distance ? `${result.distance.toFixed(2)}km` : 'unknown'
+        })
+      } else {
+        console.warn('Auto-fill failed:', result.error)
+        // Still save coordinates even if address lookup failed
+        updateData({
+          latitude: lat,
+          longitude: lng,
+        })
+        markStepCompleted(3)
+      }
+    } catch (error) {
+      console.error('Auto-fill failed:', error)
+      // Still save coordinates even if there was an error
+      updateData({
+        latitude: lat,
+        longitude: lng,
+      })
+      markStepCompleted(3)
+    } finally {
+      setIsGeocodingLoading(false)
+    }
+  }, [updateData, markStepCompleted])
 
   // Initialize MapTiler API key
   useEffect(() => {
@@ -66,7 +125,12 @@ function AddListingStepOneMap() {
         longitude: lng,
       })
 
-      setSearchQuery(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)
+      setSearchQuery(formatCoordinates(lat, lng))
+      
+      // Auto-fill address unless in manual mode
+      if (!manualMode) {
+        handleAutoFillAddress(lat, lng)
+      }
     })
 
     return () => {
@@ -78,7 +142,7 @@ function AddListingStepOneMap() {
         map.current = null
       }
     }
-  }, [])
+  }, [handleAutoFillAddress, manualMode, selectedLocation])
 
   // Update map center and marker when location changes
   useEffect(() => {
@@ -143,8 +207,7 @@ function AddListingStepOneMap() {
   }
 
   return (
-    <QuestionnaireWrapper>
-      <div className="max-w-6xl mx-auto p-8">
+    <div className="max-w-6xl mx-auto p-8">
         <div className="space-y-8">
           {/* Header */}
           <div className="text-center space-y-2">
@@ -222,11 +285,49 @@ function AddListingStepOneMap() {
               <p className="text-sm text-slate-500">
                 Lat: {selectedLocation.latitude.toFixed(6)}, Lng: {selectedLocation.longitude.toFixed(6)}
               </p>
+              {isGeocodingLoading && (
+                <p className="text-sm text-blue-600 mt-2">Loading address details...</p>
+              )}
             </div>
           )}
+
+          {/* Manual Entry Toggle */}
+          <div className="text-center">
+            <button
+              onClick={() => setManualMode(!manualMode)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+            >
+              <Navigation size={16} />
+              {manualMode ? 'Enable auto-fill from map' : 'Enter location manually'}
+            </button>
+            {manualMode && (
+              <p className="text-sm text-slate-500 mt-2">
+                Auto-fill is disabled. You can manually enter address details in the next step.
+              </p>
+            )}
+          </div>
+
+          {/* Navigation Controls */}
+          <div className="flex justify-center pt-6">
+            <button
+              onClick={() => {
+                if (selectedLocation) {
+                  markStepCompleted(3) // Mark map step as completed
+                  nextStep()
+                }
+              }}
+              disabled={!selectedLocation}
+              className={`px-8 py-3 rounded-lg font-medium transition-colors ${
+                selectedLocation
+                  ? 'bg-slate-900 text-white hover:bg-slate-800'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              {selectedLocation ? 'Continue to Address Details' : 'Select a location to continue'}
+            </button>
+          </div>
         </div>
       </div>
-    </QuestionnaireWrapper>
   )
 }
 

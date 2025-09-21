@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import TextAction from '@/components/TextAction'
 import SignUpButton from '@/components/SignUpButton'
 import Avatar from '@/components/Avatar'
@@ -12,6 +13,7 @@ import LanguageSelector from '@/components/LanguageSelector'
 import SearchBoxProperty from '@/components/SearchBoxProperty'
 import SearchBoxPropertyMini from '@/components/SearchBoxPropertyMini'
 import useCurrentUser from '@/hooks/useCurrentUser'
+import { usePropertyListingStore } from '@/stores/propertyListingStore'
 
 import type { SearchBoxType } from '@/types/searchbox'
 import ButtonSecondary from '@/components/ButtonSecondary'
@@ -24,6 +26,8 @@ interface NavBarTopProps {
 function NavBarTop({ searchBoxType = 'none', isQuestionnaire = false }: Readonly<NavBarTopProps>): React.ReactNode {
   const { user, isAuthenticated } = useCurrentUser()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const router = useRouter()
+  const { clearTemporaryData, isDirty } = usePropertyListingStore()
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen)
@@ -31,6 +35,20 @@ function NavBarTop({ searchBoxType = 'none', isQuestionnaire = false }: Readonly
 
   const closeDropdown = () => {
     setIsDropdownOpen(false)
+  }
+
+  const handleExit = () => {
+    if (isDirty) {
+      const confirmExit = window.confirm(
+        'You have unsaved changes. Are you sure you want to exit? This will delete all your progress.'
+      )
+      if (confirmExit) {
+        clearTemporaryData()
+        router.push('/')
+      }
+    } else {
+      router.push('/')
+    }
   }
   return (
     <div className={clsx([
@@ -56,7 +74,7 @@ function NavBarTop({ searchBoxType = 'none', isQuestionnaire = false }: Readonly
         {!isQuestionnaire && (
           <nav className="hidden md:flex items-center space-x-8">
             <li>
-              <TextAction href={'/'} text={'List your property'} />
+              <TextAction href={'/property/new'} text={'List your property'} />
             </li>
             <li>
               <LanguageSelector />
@@ -79,8 +97,7 @@ function NavBarTop({ searchBoxType = 'none', isQuestionnaire = false }: Readonly
               )}
             </li>
           </nav>)}
-        {isQuestionnaire && <ButtonSecondary label="Exit" onClick={() => {
-        }} />}
+        {isQuestionnaire && <ButtonSecondary label="Exit" onClick={handleExit} />}
       </div>
       {(searchBoxType === 'full' && !isQuestionnaire) && <SearchBoxProperty className="hidden lg:block" />}
     </div>
