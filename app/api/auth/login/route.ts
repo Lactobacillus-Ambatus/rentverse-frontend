@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Try to forward to backend first
+      // Forward to backend
       const response = await forwardRequest('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -35,55 +35,21 @@ export async function POST(request: NextRequest) {
 
       // Check if response is actually JSON
       const contentType = response.headers.get('content-type')
-      if (contentType && contentType.includes('application/json')) {
+      if (contentType?.includes('application/json')) {
         const data = await response.json()
         return NextResponse.json(data, { status: response.status })
+      } else {
+        // If backend doesn't return JSON, create a generic error response
+        return NextResponse.json(
+          { success: false, message: 'Invalid response from backend' },
+          { status: 502 }
+        )
       }
     } catch (backendError) {
-      console.log('Backend unavailable, using mock data for development')
-    }
-
-    // Fallback: Mock response for development
-    const { email, password } = body
-
-    // Mock credentials for testing
-    const mockCredentials = [
-      { email: 'user@example.com', password: 'password123' },
-      { email: 'john.doe@gmail.com', password: 'password123' },
-      { email: 'admin@rentverse.com', password: 'admin123' },
-      { email: 'test@test.com', password: 'test123' },
-    ]
-
-    const validCredentials = mockCredentials.find(
-      (cred) => cred.email.toLowerCase() === email.toLowerCase() && cred.password === password,
-    )
-
-    if (validCredentials) {
-      // Return successful login response in the format you specified
+      console.error('Backend error during login:', backendError)
       return NextResponse.json(
-        {
-          success: true,
-          message: 'Login successful',
-          data: {
-            user: {
-              id: '12345',
-              email: validCredentials.email,
-              name: 'John Doe',
-              role: 'user',
-            },
-            token: 'mock-jwt-token-' + Date.now(),
-          },
-        },
-        { status: 200 },
-      )
-    } else {
-      // Return error for invalid credentials
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Invalid email or password',
-        },
-        { status: 401 },
+        createErrorResponse('Backend service unavailable', backendError as Error, 503),
+        { status: 503 }
       )
     }
   } catch (error) {

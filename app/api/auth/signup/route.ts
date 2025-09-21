@@ -5,11 +5,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Validate email in the request body
-    if (!body.email) {
+    // Validate required fields
+    if (!body.email || !body.password || !body.firstName || !body.lastName) {
       return NextResponse.json(
-        { success: false, message: 'Email is required' },
-        { status: 400 },
+        { success: false, message: 'All fields are required' },
+        { status: 400 }
       )
     }
 
@@ -18,13 +18,21 @@ export async function POST(request: NextRequest) {
     if (!emailRegex.test(body.email)) {
       return NextResponse.json(
         { success: false, message: 'Invalid email format' },
-        { status: 400 },
+        { status: 400 }
+      )
+    }
+
+    // Password validation
+    if (body.password.length < 6) {
+      return NextResponse.json(
+        { success: false, message: 'Password must be at least 6 characters' },
+        { status: 400 }
       )
     }
 
     try {
       // Forward to backend
-      const response = await forwardRequest('/api/auth/check-email', {
+      const response = await forwardRequest('/api/auth/signup', {
         method: 'POST',
         headers: {
           ...getAuthHeader(request),
@@ -46,18 +54,17 @@ export async function POST(request: NextRequest) {
         )
       }
     } catch (backendError) {
-      console.error('Backend error during email check:', backendError)
+      console.error('Backend error during signup:', backendError)
       return NextResponse.json(
         createErrorResponse('Backend service unavailable', backendError as Error, 503),
         { status: 503 }
       )
     }
-
   } catch (error) {
-    console.error('Error checking email:', error)
+    console.error('Error during signup:', error)
     return NextResponse.json(
-      createErrorResponse('Failed to check email', error as Error),
-      { status: 500 },
+      createErrorResponse('Failed to create account', error as Error),
+      { status: 500 }
     )
   }
 }

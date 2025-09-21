@@ -1,14 +1,17 @@
 'use client'
 
 import clsx from 'clsx'
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import TextAction from '@/components/TextAction'
 import SignUpButton from '@/components/SignUpButton'
+import Avatar from '@/components/Avatar'
+import UserDropdown from '@/components/UserDropdown'
 import LanguageSelector from '@/components/LanguageSelector'
 import SearchBoxProperty from '@/components/SearchBoxProperty'
 import SearchBoxPropertyMini from '@/components/SearchBoxPropertyMini'
+import useCurrentUser from '@/hooks/useCurrentUser'
 
 import type { SearchBoxType } from '@/types/searchbox'
 import ButtonSecondary from '@/components/ButtonSecondary'
@@ -18,7 +21,17 @@ interface NavBarTopProps {
   isQuestionnaire?: boolean
 }
 
-function NavBarTop({ searchBoxType = 'none', isQuestionnaire = false }: NavBarTopProps): React.ReactNode {
+function NavBarTop({ searchBoxType = 'none', isQuestionnaire = false }: Readonly<NavBarTopProps>): React.ReactNode {
+  const { user, isAuthenticated } = useCurrentUser()
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen)
+  }
+
+  const closeDropdown = () => {
+    setIsDropdownOpen(false)
+  }
   return (
     <div className={clsx([
       'w-full fixed z-50',
@@ -48,8 +61,22 @@ function NavBarTop({ searchBoxType = 'none', isQuestionnaire = false }: NavBarTo
             <li>
               <LanguageSelector />
             </li>
-            <li>
-              <SignUpButton />
+            <li className="relative">
+              {isAuthenticated && user ? (
+                <>
+                  <Avatar 
+                    user={user} 
+                    onClick={toggleDropdown}
+                    className="cursor-pointer"
+                  />
+                  <UserDropdown 
+                    isOpen={isDropdownOpen} 
+                    onClose={closeDropdown}
+                  />
+                </>
+              ) : (
+                <SignUpButton />
+              )}
             </li>
           </nav>)}
         {isQuestionnaire && <ButtonSecondary label="Exit" onClick={() => {

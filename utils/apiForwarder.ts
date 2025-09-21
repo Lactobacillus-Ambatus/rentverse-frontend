@@ -1,6 +1,6 @@
 // API forwarding utility for Next.js API routes
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+const API_BASE_URL = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
 export interface ForwardRequestOptions extends RequestInit {
   timeout?: number
@@ -15,7 +15,16 @@ export async function forwardRequest(
   options: ForwardRequestOptions = {},
 ): Promise<Response> {
   const { timeout = 30000, retries = 0, ...fetchOptions } = options
-  const url = `${API_BASE_URL}${endpoint}`
+  
+  // Ensure proper URL construction by removing trailing slash from base and leading slash from endpoint
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const url = `${baseUrl}${cleanEndpoint}`
+  
+  // Debug log for development
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[API] ${options.method || 'GET'} ${url}`)
+  }
 
   const defaultHeaders = {
     'Content-Type': 'application/json',
