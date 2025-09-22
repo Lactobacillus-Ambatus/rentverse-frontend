@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Property, PropertiesState, SearchFilters, PropertiesResponse } from '@/types/property'
 import type { SearchBoxState } from '@/types/searchbox'
+import { PropertiesApiClient } from '@/utils/propertiesApiClient'
 
 interface PropertiesActions {
   // Search box actions
@@ -30,6 +31,7 @@ interface PropertiesActions {
   updateProperty: (id: string, updates: Partial<Property>) => Promise<void>
   deleteProperty: (id: string) => Promise<void>
   getPropertyById: (id: string) => Property | undefined
+  logPropertyView: (propertyId: string) => Promise<Property | null>
   clearFilters: () => void
 }
 
@@ -264,6 +266,34 @@ const usePropertiesStore = create<PropertiesStore>((set, get) => ({
   getPropertyById: (id: string) => {
     const { properties } = get()
     return properties.find(p => p.id === id)
+  },
+
+  logPropertyView: async (propertyId: string) => {
+    try {
+      const response = await PropertiesApiClient.logPropertyView(propertyId)
+      
+      if (response.success && response.data.property) {
+        // Update the property in the store with the updated view count
+        const updatedProperty = response.data.property
+        
+        set(state => ({
+          properties: state.properties.map(p => 
+            p.id === propertyId ? updatedProperty : p
+          ),
+          filteredProperties: state.filteredProperties.map(p => 
+            p.id === propertyId ? updatedProperty : p
+          ),
+        }))
+        
+        return updatedProperty
+      }
+      
+      return null
+    } catch (error) {
+      console.error('Error logging property view:', error)
+      get().setError('Failed to log property view')
+      return null
+    }
   },
 
   clearFilters: () => {

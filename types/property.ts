@@ -8,12 +8,15 @@ export interface Property {
   city: string
   state: string
   zipCode: string
-  price: number
+  country: string
+  price: string | number
+  currencyCode: string
   type: PropertyTypeBackend
   bedrooms: number
   bathrooms: number
   area: number
-  areaSqm: number  // Added areaSqm field
+  areaSqm: number
+  furnished: boolean
   isAvailable: boolean
   viewCount: number
   averageRating: number
@@ -21,11 +24,56 @@ export interface Property {
   isFavorited: boolean
   favoriteCount: number
   images: string[]
-  amenities: string[]
+  amenities: string[] | PropertyAmenity[]
   latitude?: number
   longitude?: number
+  placeId?: string | null
+  projectName?: string | null
+  developer?: string | null
+  status: string
   createdAt: string
   updatedAt: string
+  ownerId: string
+  propertyTypeId: string
+  owner?: PropertyOwner
+  propertyType?: PropertyTypeDetail
+  mapsUrl?: string
+}
+
+// Property owner information
+export interface PropertyOwner {
+  id: string
+  name: string
+  email: string
+  phone: string
+}
+
+// Property type details
+export interface PropertyTypeDetail {
+  id: string
+  code: string
+  name: string
+}
+
+// Property amenity structure
+export interface PropertyAmenity {
+  propertyId: string
+  amenityId: string
+  amenity: {
+    id: string
+    name: string
+    category: string
+  }
+}
+
+// Property view logging response
+export interface PropertyViewResponse {
+  success: boolean
+  message: string
+  data: {
+    property: Property
+    viewLogged: boolean
+  }
 }
 
 // Legacy property structure for backward compatibility
