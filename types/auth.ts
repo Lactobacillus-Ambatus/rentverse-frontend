@@ -4,7 +4,11 @@ export interface User {
   email: string
   firstName: string
   lastName: string
-  birthdate?: string
+  name: string
+  dateOfBirth: string
+  phone: string
+  role: string
+  birthdate?: string // Keep for backward compatibility
 }
 
 export interface AuthState {
@@ -25,6 +29,25 @@ export interface SignUpFormData {
   birthdate: string
   email: string
   password: string
+  phone: string
+}
+
+export interface RegisterRequest {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+  dateOfBirth: string
+  phone: string
+}
+
+export interface AuthResponse {
+  success: boolean
+  message: string
+  data: {
+    user: User
+    token: string
+  }
 }
 
 export interface EmailCheckData {

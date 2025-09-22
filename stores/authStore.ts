@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { User, AuthState } from '@/types/auth'
+import { AuthApiClient } from '@/utils/authApiClient'
 
 interface AuthActions {
   // Login functionality
@@ -11,6 +12,7 @@ interface AuthActions {
   setLastName: (lastName: string) => void
   setBirthdate: (birthdate: string) => void
   setEmail: (email: string) => void
+  setPhone: (phone: string) => void
   setSignUpPassword: (password: string) => void
   submitSignUp: () => Promise<void>
 
@@ -38,6 +40,7 @@ interface AuthFormState {
   lastName: string
   birthdate: string
   email: string
+  phone: string
   signUpPassword: string
 }
 
@@ -56,6 +59,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   lastName: '',
   birthdate: '',
   email: '',
+  phone: '',
   signUpPassword: '',
 
   // Actions
@@ -64,6 +68,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   setLastName: (lastName: string) => set({ lastName }),
   setBirthdate: (birthdate: string) => set({ birthdate }),
   setEmail: (email: string) => set({ email }),
+  setPhone: (phone: string) => set({ phone }),
   setSignUpPassword: (signUpPassword: string) => set({ signUpPassword }),
   setLoading: (isLoading: boolean) => set({ isLoading }),
   setError: (error: string | null) => set({ error }),
@@ -79,14 +84,15 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   isSignUpFormValid: () => {
-    const { firstName, lastName, email, signUpPassword, birthdate } = get()
+    const { firstName, lastName, email, signUpPassword, birthdate, phone } = get()
     const { validateEmail } = get()
     return (
       firstName.trim().length > 0 &&
       lastName.trim().length > 0 &&
       validateEmail(email) &&
       signUpPassword.length >= 6 &&
-      birthdate.length > 0
+      birthdate.length > 0 &&
+      phone.trim().length > 0
     )
   },
 
@@ -125,6 +131,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           email: backendUser.email,
           firstName: backendUser.firstName || backendUser.name || '',
           lastName: backendUser.lastName || '',
+          name: backendUser.name || `${backendUser.firstName} ${backendUser.lastName}`,
+          dateOfBirth: backendUser.dateOfBirth || '',
+          phone: backendUser.phone || '',
+          role: backendUser.role || 'user',
           birthdate: backendUser.dateOfBirth || undefined,
         }
 
@@ -157,7 +167,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   submitSignUp: async () => {
-    const { firstName, lastName, email, signUpPassword, birthdate, setLoading, setError } = get()
+    const { firstName, lastName, email, signUpPassword, birthdate, phone, setLoading, setError } = get()
 
     if (!get().isSignUpFormValid()) {
       setError('Please fill in all fields correctly')
@@ -168,23 +178,16 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     setError(null)
 
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password: signUpPassword,
-          firstName,
-          lastName,
-          birthdate,
-        }),
+      const result = await AuthApiClient.register({
+        email,
+        password: signUpPassword,
+        firstName,
+        lastName,
+        dateOfBirth: birthdate,
+        phone,
       })
 
-      const result = await response.json()
-
-      if (response.ok && result.success) {
+      if (result.success) {
         // Store user data and token
         const backendUser = result.data.user
         const user: User = {
@@ -192,6 +195,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           email: backendUser.email,
           firstName: backendUser.firstName || backendUser.name || '',
           lastName: backendUser.lastName || '',
+          name: backendUser.name || `${backendUser.firstName} ${backendUser.lastName}`,
+          dateOfBirth: backendUser.dateOfBirth || birthdate,
+          phone: backendUser.phone || phone,
+          role: backendUser.role || 'user',
           birthdate: backendUser.dateOfBirth || birthdate,
         }
 
@@ -201,6 +208,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           firstName: '',
           lastName: '',
           email: '',
+          phone: '',
           signUpPassword: '',
           birthdate: '',
           error: null,
@@ -220,7 +228,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       }
     } catch (error) {
       console.error('Sign up error:', error)
-      setError('Sign up failed. Please try again.')
+      setError(error instanceof Error ? error.message : 'Sign up failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -270,6 +278,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       error: null,
       password: '',
       email: '',
+      phone: '',
       signUpPassword: '',
     })
     
@@ -286,6 +295,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     lastName: '',
     birthdate: '',
     email: '',
+    phone: '',
     signUpPassword: '',
     error: null,
   }),
@@ -344,6 +354,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
             email: backendUser.email,
             firstName: backendUser.firstName || backendUser.name || '',
             lastName: backendUser.lastName || '',
+            name: backendUser.name || `${backendUser.firstName} ${backendUser.lastName}`,
+            dateOfBirth: backendUser.dateOfBirth || '',
+            phone: backendUser.phone || '',
+            role: backendUser.role || 'user',
             birthdate: backendUser.dateOfBirth || undefined,
           }
 
@@ -395,6 +409,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
             email: backendUser.email,
             firstName: backendUser.firstName || backendUser.name || '',
             lastName: backendUser.lastName || '',
+            name: backendUser.name || `${backendUser.firstName} ${backendUser.lastName}`,
+            dateOfBirth: backendUser.dateOfBirth || '',
+            phone: backendUser.phone || '',
+            role: backendUser.role || 'user',
             birthdate: backendUser.dateOfBirth || undefined,
           }
 

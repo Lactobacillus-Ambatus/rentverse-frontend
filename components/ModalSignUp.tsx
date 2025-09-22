@@ -9,6 +9,7 @@ import InputEmail from '@/components/InputEmail'
 import InputName from '@/components/InputName'
 import InputDate from '@/components/InputDate'
 import InputPassword from '@/components/InputPassword'
+import InputPhone from '@/components/InputPhone'
 import useAuthStore from '@/stores/authStore'
 import BoxError from '@/components/BoxError'
 
@@ -22,6 +23,7 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
     lastName,
     birthdate,
     email,
+    phone,
     signUpPassword,
     isLoading,
     error,
@@ -29,6 +31,7 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
     setLastName,
     setBirthdate,
     setEmail,
+    setPhone,
     setSignUpPassword,
     isSignUpFormValid,
     submitSignUp,
@@ -107,14 +110,22 @@ function ModalSignUp({ isModal = true }: ModalSignUpProps) {
             <label htmlFor="contactInfo" className="block text-sm font-medium text-slate-900 mb-3">
               Contact info
             </label>
-            <InputEmail
-              value={email}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-              placeholder="me@email.com"
-              required
-            />
+            <div className="space-y-4">
+              <InputEmail
+                value={email}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                placeholder="me@email.com"
+                required
+              />
+              <InputPhone
+                value={phone}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
+                placeholder="Phone number"
+                required
+              />
+            </div>
             <p className="text-xs text-slate-500 mt-2">
-              We&apos;ll email you rent confirmations and receipts.
+              We&apos;ll email you rent confirmations and receipts. We may also contact you via phone for important updates.
             </p>
           </div>
 
