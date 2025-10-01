@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { User, AuthState } from '@/types/auth'
 import { AuthApiClient } from '@/utils/authApiClient'
+import { setCookie, deleteCookie } from '@/utils/cookies'
 
 interface AuthActions {
   // Login functionality
@@ -126,16 +127,31 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       if (response.ok && result.success) {
         // Store user data and token
         const backendUser = result.data.user
+        
+        // Debug logging for development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[AUTH] Backend user data:', backendUser)
+          console.log('[AUTH] First name:', backendUser.firstName)
+          console.log('[AUTH] Last name:', backendUser.lastName)
+          console.log('[AUTH] Name field:', backendUser.name)
+        }
+        
         const user: User = {
           id: backendUser.id,
           email: backendUser.email,
-          firstName: backendUser.firstName || backendUser.name || '',
+          firstName: backendUser.firstName || '',
           lastName: backendUser.lastName || '',
-          name: backendUser.name || `${backendUser.firstName} ${backendUser.lastName}`,
+          name: backendUser.name || `${backendUser.firstName || ''} ${backendUser.lastName || ''}`.trim(),
           dateOfBirth: backendUser.dateOfBirth || '',
           phone: backendUser.phone || '',
           role: backendUser.role || 'user',
           birthdate: backendUser.dateOfBirth || undefined,
+        }
+        
+        // Debug logging for final user object
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[AUTH] Final user object:', user)
+          console.log('[AUTH] Constructed name:', user.name)
         }
 
         set({
@@ -150,6 +166,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         if (typeof window !== 'undefined') {
           localStorage.setItem('authToken', result.data.token)
           localStorage.setItem('authUser', JSON.stringify(user))
+          // Also set cookie for server-side middleware access
+          setCookie('authToken', result.data.token, 7) // 7 days expiry
         }
 
         // Navigate to home page instead of forcing to property page
@@ -193,9 +211,9 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         const user: User = {
           id: backendUser.id,
           email: backendUser.email,
-          firstName: backendUser.firstName || backendUser.name || '',
+          firstName: backendUser.firstName || '',
           lastName: backendUser.lastName || '',
-          name: backendUser.name || `${backendUser.firstName} ${backendUser.lastName}`,
+          name: backendUser.name || `${backendUser.firstName || ''} ${backendUser.lastName || ''}`.trim(),
           dateOfBirth: backendUser.dateOfBirth || birthdate,
           phone: backendUser.phone || phone,
           role: backendUser.role || 'user',
@@ -218,6 +236,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         if (typeof window !== 'undefined' && result.data.token) {
           localStorage.setItem('authToken', result.data.token)
           localStorage.setItem('authUser', JSON.stringify(user))
+          // Also set cookie for server-side middleware access
+          setCookie('authToken', result.data.token, 7) // 7 days expiry
         }
 
         // Navigate to home page instead of forcing to property page
@@ -282,10 +302,11 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       signUpPassword: '',
     })
     
-    // Clear localStorage
+    // Clear localStorage and cookies
     if (typeof window !== 'undefined') {
       localStorage.removeItem('authToken')
       localStorage.removeItem('authUser')
+      deleteCookie('authToken')
     }
   },
 
@@ -316,14 +337,16 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           error: null,
         })
         
-        // Optionally validate token in background
-        get().validateToken()
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[AUTH] Initialized with stored user:', user)
+        }
       }
     } catch (error) {
       console.error('Error initializing auth:', error)
       // Clear corrupted data
       localStorage.removeItem('authToken')
       localStorage.removeItem('authUser')
+      deleteCookie('authToken')
     }
   },
 
@@ -346,19 +369,39 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       if (response.ok) {
         const result = await response.json()
         
-        if (result.success && result.data) {
+        // Debug logging for development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[AUTH] validateToken response:', result)
+          console.log('[AUTH] result.data:', result.data)
+        }
+        
+        if (result.success && result.data?.user) {
           // Update user data with fresh data from backend
-          const backendUser = result.data
+          const backendUser = result.data.user
+          
+          // Debug logging for backend user data
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[AUTH] validateToken backendUser:', backendUser)
+            console.log('[AUTH] validateToken firstName:', backendUser.firstName)
+            console.log('[AUTH] validateToken lastName:', backendUser.lastName)
+            console.log('[AUTH] validateToken name:', backendUser.name)
+          }
+          
           const user: User = {
             id: backendUser.id,
             email: backendUser.email,
-            firstName: backendUser.firstName || backendUser.name || '',
+            firstName: backendUser.firstName || '',
             lastName: backendUser.lastName || '',
-            name: backendUser.name || `${backendUser.firstName} ${backendUser.lastName}`,
+            name: backendUser.name || `${backendUser.firstName || ''} ${backendUser.lastName || ''}`.trim(),
             dateOfBirth: backendUser.dateOfBirth || '',
             phone: backendUser.phone || '',
             role: backendUser.role || 'user',
             birthdate: backendUser.dateOfBirth || undefined,
+          }
+          
+          // Debug logging for final user object
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[AUTH] validateToken final user:', user)
           }
 
           set({
@@ -370,7 +413,11 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           // Update stored user data
           localStorage.setItem('authUser', JSON.stringify(user))
           return true
+        } else if (process.env.NODE_ENV === 'development') {
+          console.log('[AUTH] validateToken failed - no success or data:', result)
         }
+      } else if (process.env.NODE_ENV === 'development') {
+        console.log('[AUTH] validateToken failed - response not ok:', response.status)
       }
       
       // Token is invalid or response unsuccessful, clear auth state
@@ -401,15 +448,15 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       if (response.ok) {
         const result = await response.json()
         
-        if (result.success && result.data) {
+        if (result.success && result.data?.user) {
           // Update user data with fresh data from backend
-          const backendUser = result.data
+          const backendUser = result.data.user
           const user: User = {
             id: backendUser.id,
             email: backendUser.email,
-            firstName: backendUser.firstName || backendUser.name || '',
+            firstName: backendUser.firstName || '',
             lastName: backendUser.lastName || '',
-            name: backendUser.name || `${backendUser.firstName} ${backendUser.lastName}`,
+            name: backendUser.name || `${backendUser.firstName || ''} ${backendUser.lastName || ''}`.trim(),
             dateOfBirth: backendUser.dateOfBirth || '',
             phone: backendUser.phone || '',
             role: backendUser.role || 'user',

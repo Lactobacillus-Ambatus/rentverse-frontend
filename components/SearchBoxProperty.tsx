@@ -4,7 +4,8 @@ import clsx from 'clsx'
 import React, { useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, Plus, Minus } from 'lucide-react'
-import { getAllLocations, getAllPropertyTypes } from '@/data/searchbox-options'
+import { getAllLocations } from '@/data/searchbox-options'
+import { usePropertyTypesForSearch } from '@/hooks/usePropertyTypes'
 import usePropertiesStore from '@/stores/propertiesStore'
 
 function SearchBoxProperty(props: Readonly<React.HTMLAttributes<HTMLDivElement>>): React.ReactNode {
@@ -37,7 +38,7 @@ function SearchBoxProperty(props: Readonly<React.HTMLAttributes<HTMLDivElement>>
   const durationRef = useRef<HTMLDivElement>(null)
   const typeRef = useRef<HTMLDivElement>(null)
   const locations = getAllLocations()
-  const propertyTypes = getAllPropertyTypes()
+  const { propertyTypes } = usePropertyTypesForSearch()
   const { className, ...propsRest } = props
 
   // Handle search functionality

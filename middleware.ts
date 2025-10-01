@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Check for authentication on auth routes
+  if (pathname.startsWith('/auth/')) {
+    const authToken = request.cookies.get('authToken')?.value
+    
+    // If user is authenticated and trying to access login/signup, redirect to home
+    if (authToken && (pathname === '/auth/login' || pathname === '/auth/signup')) {
+      const homeUrl = new URL('/', request.url)
+      return NextResponse.redirect(homeUrl)
+    }
+  }
+
   // Only apply middleware to API routes that are being rewritten
   if (request.nextUrl.pathname.startsWith('/api/')) {
     // Handle preflight OPTIONS requests
@@ -46,8 +59,9 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all API routes for rewriting
+     * Match all API routes for rewriting and auth routes for redirect protection
      */
     '/api/:path*',
+    '/auth/:path*',
   ],
 }

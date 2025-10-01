@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getPropertyTypesForListing } from '@/data/searchbox-options'
+import { usePropertyTypes } from '@/hooks/usePropertyTypes'
 import { usePropertyListingStore } from '@/stores/propertyListingStore'
 
 function AddListingStepOnePlace() {
   const { data, updateData, markStepCompleted } = usePropertyListingStore()
   const [selectedPropertyType, setSelectedPropertyType] = useState<string>(data.propertyType || '')
-  const propertyTypes = getPropertyTypesForListing() // Using the filtered list
+  const { propertyTypes, isLoading, error } = usePropertyTypes()
 
   // Update store when selection changes
   useEffect(() => {
@@ -26,7 +26,14 @@ function AddListingStepOnePlace() {
   }, [data.propertyType, selectedPropertyType])
 
   const handlePropertyTypeSelect = (propertyName: string) => {
+    const selectedType = propertyTypes.find(type => type.name === propertyName)
     setSelectedPropertyType(propertyName)
+    if (selectedType) {
+      updateData({ 
+        propertyType: propertyName,
+        propertyTypeId: selectedType.id 
+      })
+    }
   }
 
   return (
@@ -41,10 +48,22 @@ function AddListingStepOnePlace() {
           </p>
         </div>
 
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
+            <p className="text-slate-600">Loading property types...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-600 mb-4">Error loading property types: {error}</p>
+            <p className="text-slate-600">Using fallback options...</p>
+          </div>
+        ) : null}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {propertyTypes.map((propertyType) => (
             <button
-              key={propertyType.name}
+              key={propertyType.id || propertyType.name}
               onClick={() => handlePropertyTypeSelect(propertyType.name)}
               className={`
                 p-6 border-2 rounded-xl transition-all duration-200 text-left

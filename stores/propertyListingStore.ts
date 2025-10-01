@@ -6,6 +6,7 @@ import { uploadProperty, mapPropertyListingToUploadRequest } from '@/utils/prope
 export interface PropertyListingData {
   // Step 1: Basic Information
   propertyType: string
+  propertyTypeId?: string // Store the backend property type ID
   address: string
   city: string
   state: string
@@ -355,6 +356,22 @@ export const usePropertyListingStore = create<PropertyListingStore>()(
         try {
           const { data } = get()
           
+          // Validate required fields including propertyTypeId
+          if (!data.propertyType) {
+            throw new Error('Property type is required')
+          }
+          
+          if (!data.propertyTypeId) {
+            console.warn('No propertyTypeId found, using fallback mapping')
+          }
+          
+          // Log images status
+          if (data.images && data.images.length > 0) {
+            console.log(`Property has ${data.images.length} images ready for upload:`, data.images)
+          } else {
+            console.warn('No images found in property data - property will be created without images')
+          }
+          
           // Check multiple ways to get auth token
           let token = null
           
@@ -385,8 +402,10 @@ export const usePropertyListingStore = create<PropertyListingStore>()(
             return
           }
           
-          // Map property data to upload format
+          // Map property data to upload format (now includes dynamic propertyTypeId)
           const uploadData = mapPropertyListingToUploadRequest(data)
+          
+          console.log('Submitting property with propertyTypeId:', uploadData.propertyTypeId)
           
           // Upload property to backend
           await uploadProperty(uploadData, token)

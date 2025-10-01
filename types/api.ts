@@ -137,6 +137,7 @@ export interface PropertyCreateRequest {
   price: number
   area: number
   propertyType: string
+  propertyTypeId: string
   imageUrl?: string
   description?: string
 }
@@ -147,6 +148,7 @@ export interface PropertyUpdateRequest {
   price?: number
   area?: number
   propertyType?: string
+  propertyTypeId?: string
   imageUrl?: string
   description?: string
 }

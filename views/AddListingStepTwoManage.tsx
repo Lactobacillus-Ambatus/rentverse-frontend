@@ -23,10 +23,12 @@ function AddListingStepTwoManage() {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const isUpdatingStore = useRef(false) // Track when we're updating the store
 
-  // Load existing photos from store on mount
+  // Load existing photos from store on mount and when external changes occur
   useEffect(() => {
-    if (data.images && data.images.length > 0) {
+    // Only update from store if we're not currently updating the store
+    if (!isUpdatingStore.current && data.images && data.images.length > 0) {
       const existingPhotos: PhotoItem[] = data.images.map((url, index) => ({
         id: `existing-${index}`,
         url: url,
@@ -36,16 +38,28 @@ function AddListingStepTwoManage() {
     }
   }, [data.images])
 
-  // Update store whenever photos change
+  // Update store whenever photos change (only when user makes changes)
   useEffect(() => {
     const uploadedUrls = photos
       .filter(photo => photo.url && !photo.isUploading)
       .map(photo => photo.url!)
     
+    // Only update if we have uploaded URLs and they're different from current store data
     if (uploadedUrls.length > 0) {
-      updateData({ images: uploadedUrls })
+      const currentImages = data.images || []
+      const hasChanges = uploadedUrls.length !== currentImages.length || 
+                        uploadedUrls.some((url, index) => url !== currentImages[index])
+      
+      if (hasChanges) {
+        isUpdatingStore.current = true
+        updateData({ images: uploadedUrls })
+        // Reset flag after a short delay to allow store update to complete
+        setTimeout(() => {
+          isUpdatingStore.current = false
+        }, 100)
+      }
     }
-  }, [photos, updateData])
+  }, [photos, updateData, data.images])
 
   // Create array of 5 slots (minimum required)
   const photoSlots = Array.from({ length: 5 }, (_, index) => {

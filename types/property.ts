@@ -53,6 +53,23 @@ export interface PropertyTypeDetail {
   id: string
   code: string
   name: string
+  description?: string
+  isActive?: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+// Property types API response
+export interface PropertyTypesResponse {
+  success: boolean
+  message: string
+  data: PropertyTypeDetail[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
 }
 
 // Property amenity structure

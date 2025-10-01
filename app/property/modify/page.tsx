@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import ContentWrapper from '@/components/ContentWrapper'
 import ButtonCircle from '@/components/ButtonCircle'
 import { ArrowLeft } from 'lucide-react'
+import { usePropertyTypes } from '@/hooks/usePropertyTypes'
 
 function ModifyPropertyPage() {
   const router = useRouter()
+  const { propertyTypes, isLoading } = usePropertyTypes()
   const [formData, setFormData] = useState({
     title: 'Tijani Raja Dewa - Apartements',
     description: 'Lorem ipsum dolor sit amet consectetur ut',
@@ -84,13 +86,17 @@ function ModifyPropertyPage() {
               value={formData.propertyType}
               onChange={(e) => handleInputChange('propertyType', e.target.value)}
               className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              disabled={isLoading}
             >
-              <option value="Apartments">Apartments</option>
-              <option value="Condominium">Condominium</option>
-              <option value="Townhouse">Townhouse</option>
-              <option value="Studio">Studio</option>
-              <option value="House">House</option>
-              <option value="Villa">Villa</option>
+              {isLoading ? (
+                <option value="">Loading property types...</option>
+              ) : (
+                propertyTypes.map((type) => (
+                  <option key={type.id} value={type.name}>
+                    {type.name}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
