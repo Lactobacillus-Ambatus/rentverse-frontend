@@ -148,7 +148,7 @@ function DetailPage() {
 
           {/* Right side - Booking box */}
           <div className="lg:col-span-1">
-            <BoxPropertyPrice price={displayPrice} />
+            <BoxPropertyPrice price={displayPrice} propertyId={property.id} />
           </div>
         </div>
       </section>

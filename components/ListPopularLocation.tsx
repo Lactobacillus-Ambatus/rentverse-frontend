@@ -9,7 +9,7 @@ function ListPopularLocation() {
   const locations = getPopularLocations()
 
   return (
-    <div className="py-8 px-4 md:px-16">
+    <div className="py-8 px-4 md:px-16 overflow-hidden">
       {/* Section title */}
       <div className="mb-12">
         <h2 className="text-center font-serif text-3xl text-teal-900 mb-4">
@@ -43,7 +43,7 @@ function ListPopularLocation() {
             spaceBetween: 32,
           },
         }}
-        className="!overflow-visible"
+        className="overflow-hidden"
       >
         {locations.map((location) => (
           <SwiperSlide key={location.name}>
