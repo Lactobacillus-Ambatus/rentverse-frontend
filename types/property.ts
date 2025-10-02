@@ -54,6 +54,7 @@ export interface PropertyTypeDetail {
   code: string
   name: string
   description?: string
+  icon?: string
   isActive?: boolean
   createdAt?: string
   updatedAt?: string

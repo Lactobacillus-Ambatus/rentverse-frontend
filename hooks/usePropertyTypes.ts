@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { PropertyTypeDetail } from '@/types/property'
 import { PropertyTypesApiClient } from '@/utils/propertyTypesApiClient'
-import { PropertyTypesApiClientProxy } from '@/utils/propertyTypesApiClientProxy'
 
 // Icon mapping for property types
 const getPropertyTypeIcon = (code: string): string => {
@@ -19,7 +18,7 @@ const getPropertyTypeIcon = (code: string): string => {
 
 // Transform backend property type to frontend format
 const transformPropertyType = (propertyType: PropertyTypeDetail) => ({
-  icon: getPropertyTypeIcon(propertyType.code),
+  icon: propertyType.icon || getPropertyTypeIcon(propertyType.code), // Use API icon or fallback
   name: propertyType.name,
   description: propertyType.description || '',
   id: propertyType.id,
@@ -43,25 +42,18 @@ export const usePropertyTypes = () => {
         setIsLoading(true)
         setError(null)
         
-        let response
-        try {
-          // First, try direct API call
-          console.log('Trying direct API call...')
-          response = await PropertyTypesApiClient.getPropertyTypes()
-        } catch (directError) {
-          console.log('Direct API failed, trying proxy...', directError)
-          // If direct fails, try the proxy approach
-          response = await PropertyTypesApiClientProxy.getPropertyTypes()
-        }
+        console.log('Fetching property types from API...')
+        const response = await PropertyTypesApiClient.getPropertyTypes()
         
         if (response.success && response.data) {
           const transformedTypes = response.data
-            .filter(type => type.isActive !== false) // Only include active types
+            .filter((type: PropertyTypeDetail) => type.isActive !== false) // Only include active types
             .map(transformPropertyType)
           
           setPropertyTypes(transformedTypes)
+          console.log('✅ Successfully loaded property types:', transformedTypes.length)
         } else {
-          throw new Error('Failed to fetch property types')
+          throw new Error('Failed to fetch property types - invalid response format')
         }
       } catch (err) {
         console.error('Error fetching property types:', err)
@@ -71,27 +63,31 @@ export const usePropertyTypes = () => {
           errorMessage = err.message
           
           // Provide more helpful error messages
-          if (err.message.includes('<!DOCTYPE')) {
-            errorMessage = 'API returned HTML instead of JSON (possibly ngrok warning page)'
-          } else if (err.message.includes('Failed to fetch')) {
-            errorMessage = 'Network error - check if API server is running'
-          } else if (err.message.includes('CORS')) {
-            errorMessage = 'CORS error - check API server configuration'
+          if (err.message.includes('Failed to fetch') || err.message.includes('Unable to connect')) {
+            errorMessage = 'Network error - check your internet connection'
+          } else if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+            errorMessage = 'Authentication required - please log in'
+          } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
+            errorMessage = 'Access denied - insufficient permissions'
+          } else if (err.message.includes('404')) {
+            errorMessage = 'API endpoint not found - check backend configuration'
+          } else if (err.message.includes('500')) {
+            errorMessage = 'Server error - please try again later'
           }
         }
         
         setError(errorMessage)
         
         // Fallback to static data on error
-        console.log('Using fallback property types due to API error')
+        console.log('🏠 Using fallback property types due to API error')
         setPropertyTypes([
-          { icon: '🏠', name: 'Apartment', description: 'Urban apartment units', id: 'fallback-1', code: 'APARTMENT' },
-          { icon: '🏬', name: 'Condominium', description: 'Modern condo living', id: 'fallback-2', code: 'CONDOMINIUM' },
-          { icon: '🏡', name: 'House', description: 'Single family homes', id: 'fallback-3', code: 'HOUSE' },
-          { icon: '🏘️', name: 'Townhouse', description: 'Multi-story attached homes', id: 'fallback-4', code: 'TOWNHOUSE' },
-          { icon: '🏰', name: 'Villa', description: 'Luxury standalone villas', id: 'fallback-5', code: 'VILLA' },
-          { icon: '🏙️', name: 'Penthouse', description: 'Top-floor luxury units', id: 'fallback-6', code: 'PENTHOUSE' },
-          { icon: '🏢', name: 'Studio', description: 'Open-concept single room', id: 'fallback-7', code: 'STUDIO' },
+          { icon: '�', name: 'Apartment', description: 'High-rise residential unit in apartment building', id: 'fallback-1', code: 'APARTMENT' },
+          { icon: '�️', name: 'Condominium', description: 'Luxury residential unit with premium facilities and amenities', id: 'fallback-2', code: 'CONDOMINIUM' },
+          { icon: '�', name: 'House', description: 'Standalone landed residential property', id: 'fallback-3', code: 'HOUSE' },
+          { icon: '�', name: 'Penthouse', description: 'Luxury apartment on the top floor with premium amenities', id: 'fallback-4', code: 'PENTHOUSE' },
+          { icon: '�', name: 'Studio', description: 'Open-concept single room residential unit', id: 'fallback-5', code: 'STUDIO' },
+          { icon: '�️', name: 'Townhouse', description: 'Multi-level landed property in planned development', id: 'fallback-6', code: 'TOWNHOUSE' },
+          { icon: '�', name: 'Villa', description: 'Luxurious single-family home with extensive grounds', id: 'fallback-7', code: 'VILLA' },
         ])
       } finally {
         setIsLoading(false)

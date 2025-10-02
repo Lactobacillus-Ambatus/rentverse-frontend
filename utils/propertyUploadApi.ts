@@ -242,14 +242,8 @@ export async function mapPropertyListingToUploadRequestWithDynamicTypes(
     try {
       // Import here to avoid circular dependencies
       const { PropertyTypesApiClient } = await import('@/utils/propertyTypesApiClient')
-      const { PropertyTypesApiClientProxy } = await import('@/utils/propertyTypesApiClientProxy')
       
-      let response
-      try {
-        response = await PropertyTypesApiClient.getPropertyTypes()
-      } catch {
-        response = await PropertyTypesApiClientProxy.getPropertyTypes()
-      }
+      const response = await PropertyTypesApiClient.getPropertyTypes()
       
       if (response.success && response.data) {
         const matchingType = response.data.find(type => 

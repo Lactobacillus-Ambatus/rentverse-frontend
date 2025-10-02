@@ -50,7 +50,24 @@ export class PropertiesApiClient {
         throw new Error(data.message || 'Failed to get property details')
       }
 
-      return data.data as Property
+      // The backend returns property data in data.property structure
+      const backendProperty = data.data?.property || data.data
+      if (!backendProperty) {
+        throw new Error('No property data found in response')
+      }
+
+      // Map backend response to frontend Property interface
+      const propertyData: Property = {
+        ...backendProperty,
+        // Map propertyType.code to type field for compatibility
+        type: backendProperty.propertyType?.code || 'APARTMENT',
+        // Ensure price is converted to number if it's a string
+        price: typeof backendProperty.price === 'string' ? parseFloat(backendProperty.price) : backendProperty.price,
+        // Ensure area is available (map from areaSqm if area is missing)
+        area: backendProperty.area || backendProperty.areaSqm || 0,
+      }
+
+      return propertyData
     } catch (error) {
       console.error('Get property API error:', error)
       throw error instanceof Error ? error : new Error('Network error occurred')

@@ -1,14 +1,12 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import ContentWrapper from '@/components/ContentWrapper'
 import ButtonCircle from '@/components/ButtonCircle'
-import { ArrowLeft } from 'lucide-react'
-import { BookingApiClient } from '@/utils/bookingApiClient'
+import { ArrowLeft, Plus, Minus } from 'lucide-react'
 import { PropertiesApiClient } from '@/utils/propertiesApiClient'
-import { BookingRequest } from '@/types/booking'
 import { Property } from '@/types/property'
 import useAuthStore from '@/stores/authStore'
 import { debugAuthState } from '@/utils/debugAuth'
@@ -39,37 +37,113 @@ function BookingPage() {
     totalAmount: 0
   })
 
+  // Duration counters (similar to searchbar)
+  const [startMonthCount, setStartMonthCount] = useState(0) // Start month from now
+  const [durationMonths, setDurationMonths] = useState(1) // Duration in months
+
+  // Helper function to get property price as number
+  const getPropertyPrice = useCallback(() => {
+    if (!property) return 0
+    return typeof property.price === 'string' ? parseFloat(property.price) : property.price
+  }, [property])
+
+  // Update actual dates based on month counters
+  const updateDatesFromCounters = useCallback((startMonth: number, duration: number) => {
+    const currentDate = new Date()
+    
+    // For start month calculation, ensure we don't go to the past
+    let startDate: Date
+    if (startMonth === 0) {
+      // If starting "this month", use tomorrow or today (whichever is later)
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      startDate = tomorrow
+    } else {
+      // For future months, use the 1st of that month
+      startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + startMonth, 1)
+    }
+    
+    // Calculate end date by adding duration months to start date
+    const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + duration, 0) // Last day of the end month
+    
+    // Calculate total amount based on duration and property price
+    const monthlyPrice = getPropertyPrice()
+    const totalAmount = monthlyPrice * duration
+    
+    setFormData(prev => ({
+      ...prev,
+      checkIn: startDate.toISOString().split('T')[0],
+      checkOut: endDate.toISOString().split('T')[0],
+      totalAmount: totalAmount
+    }))
+  }, [getPropertyPrice]) // Depend on getPropertyPrice
+
+  // Helper functions for month counters
+  const incrementStartMonth = () => {
+    setStartMonthCount(prev => prev + 1)
+    updateDatesFromCounters(startMonthCount + 1, durationMonths)
+  }
+
+  const decrementStartMonth = () => {
+    if (startMonthCount > 0) {
+      setStartMonthCount(prev => prev - 1)
+      updateDatesFromCounters(startMonthCount - 1, durationMonths)
+    }
+  }
+
+  const incrementDuration = () => {
+    setDurationMonths(prev => prev + 1)
+    updateDatesFromCounters(startMonthCount, durationMonths + 1)
+  }
+
+  const decrementDuration = () => {
+    if (durationMonths > 1) {
+      setDurationMonths(prev => prev - 1)
+      updateDatesFromCounters(startMonthCount, durationMonths - 1)
+    }
+  }
+
+  // Format month display text
+  const getStartMonthText = () => {
+    const currentDate = new Date()
+    const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + startMonthCount, 1)
+    return targetDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  }
+
+  const getDurationText = () => {
+    return durationMonths === 1 ? '1 month' : `${durationMonths} months`
+  }
+
   // Fetch property data
   useEffect(() => {
     const fetchProperty = async () => {
+      if (!propertyId) return
+      
       try {
         setIsLoadingProperty(true)
         
-        // Validate propertyId before making API call
-        if (!propertyId) {
-          console.error('[PROPERTY] No property ID available from route params')
-          setSubmitError('Invalid property ID. Please check the URL.')
-          return
-        }
-        
-        // Fetch actual property data using the properties API client
+        // Use the same approach as the property view page
         console.log('[PROPERTY] Fetching property with ID:', propertyId)
-        const backendProperty = await PropertiesApiClient.getProperty(propertyId)
+        const viewResponse = await PropertiesApiClient.logPropertyView(propertyId)
         
-        console.log('[PROPERTY] Raw API response:', backendProperty)
-        setProperty(backendProperty)
-        
-        // Set the initial total amount from property price
-        const price = typeof backendProperty.price === 'string' 
-          ? parseFloat(backendProperty.price) 
-          : backendProperty.price
-        setFormData(prev => ({ ...prev, totalAmount: price || 0 }))
+        if (viewResponse.success && viewResponse.data.property) {
+          const backendProperty = viewResponse.data.property
+          console.log('[PROPERTY] Successfully loaded property:', backendProperty)
+          setProperty(backendProperty)
+          
+          // Set the initial total amount from property price
+          const price = typeof backendProperty.price === 'string' 
+            ? parseFloat(backendProperty.price) 
+            : backendProperty.price
+          setFormData(prev => ({ ...prev, totalAmount: price || 0 }))
+        } else {
+          setSubmitError('Failed to load property details')
+          setProperty(null)
+        }
         
       } catch (error) {
         console.error('Error fetching property:', error)
         setSubmitError('Failed to load property details. Please try again.')
-        
-        // Don't set fallback data, let the user know there's an issue
         setProperty(null)
       } finally {
         setIsLoadingProperty(false)
@@ -86,6 +160,27 @@ function BookingPage() {
     }
   }, [propertyId])
 
+  // Initialize dates on component mount
+  useEffect(() => {
+    const currentDate = new Date()
+    const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+    const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0)
+    
+    setFormData(prev => ({
+      ...prev,
+      checkIn: startDate.toISOString().split('T')[0],
+      checkOut: endDate.toISOString().split('T')[0],
+      totalAmount: 0 // Will be updated when property loads
+    }))
+  }, []) // Run once on mount
+
+  // Update total amount when property loads or duration changes
+  useEffect(() => {
+    if (property) {
+      updateDatesFromCounters(startMonthCount, durationMonths)
+    }
+  }, [property, startMonthCount, durationMonths, updateDatesFromCounters]) // Update when property or counters change
+
   // Get button text based on state
   const getSubmitButtonText = () => {
     if (isSubmitting) return 'Submitting...'
@@ -93,24 +188,12 @@ function BookingPage() {
     return 'Submit Booking'
   }
 
-  // Redirect to login if not authenticated
-  const handleAuthRedirect = () => {
-    if (!isLoggedIn) {
-      setSubmitError('Please log in to make a booking.')
-      setTimeout(() => {
-        router.push('/auth/login')
-      }, 2000)
-      return true
-    }
-    return false
-  }
-
   const handleBack = () => {
     router.back()
   }
 
   const handleNext = () => {
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1)
     }
   }
@@ -122,8 +205,8 @@ function BookingPage() {
   }
 
     const handleSubmitBooking = async () => {
-    if (!formData.checkIn || !formData.checkOut || !formData.numGuests) {
-      setSubmitError('Please fill in all required fields')
+    if (!formData.checkIn || !formData.checkOut) {
+      setSubmitError('Please select booking dates')
       return
     }
 
@@ -194,29 +277,52 @@ function BookingPage() {
         return
       }
 
-      // Prepare booking data
-      const bookingData: BookingRequest = {
+      // Prepare booking data with the correct schema
+      const bookingData = {
         propertyId: propertyId,
-        startDate: formData.checkIn,
-        endDate: formData.checkOut,
+        startDate: new Date(formData.checkIn + 'T12:00:00.000Z').toISOString(),
+        endDate: new Date(formData.checkOut + 'T23:59:59.000Z').toISOString(),
         rentAmount: formData.totalAmount || 0,
-        securityDeposit: 0,
-        notes: formData.message
+        securityDeposit: 0, // Always 0 as requested
+        notes: formData.message || ""
       }
 
       console.log('[BOOKING] Booking data:', bookingData)
 
-      // Submit booking
-      console.log('[BOOKING] Submitting booking through API client...')
-      const response = await BookingApiClient.createBooking(bookingData)
-      console.log('[BOOKING] Booking response:', response)
+      // Submit booking directly to backend API
+      console.log('[BOOKING] Submitting booking to /api/bookings...')
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(bookingData)
+      })
 
-      if (response && response.id) {
-        setCurrentStep(3) // Go to confirmation step
+      console.log('[BOOKING] Booking response status:', response.status)
+      console.log('[BOOKING] Booking response ok:', response.ok)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('[BOOKING] Booking failed:', errorData)
+        throw new Error(errorData.message || `Booking failed with status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log('[BOOKING] Booking response:', result)
+
+      if (result && (result.id || result.success)) {
+        setCurrentStep(4) // Keep on review step but show success
         console.log('[BOOKING] Booking successful!')
+        
+        // Optional: redirect to bookings page after a delay
+        setTimeout(() => {
+          router.push('/rents') // Redirect to user's bookings
+        }, 2000)
       } else {
-        setSubmitError('Failed to create booking')
-        console.log('[BOOKING] Booking failed - no booking ID received')
+        setSubmitError('Failed to create booking - no confirmation received')
+        console.log('[BOOKING] Booking failed - no booking ID or success confirmation')
       }
     } catch (error: unknown) {
       console.error('Booking submission error:', error)
@@ -244,6 +350,57 @@ function BookingPage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Loading state
+  if (isLoadingProperty) {
+    return (
+      <ContentWrapper>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="text-lg text-slate-600">Loading property details...</div>
+          </div>
+        </div>
+      </ContentWrapper>
+    )
+  }
+
+  // Error state
+  if (submitError && !property) {
+    return (
+      <ContentWrapper>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="text-lg text-red-600">{submitError}</div>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </ContentWrapper>
+    )
+  }
+
+  // Property not found state
+  if (!property && !isLoadingProperty) {
+    return (
+      <ContentWrapper>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="text-lg text-red-600">Property not found</div>
+            <button 
+              onClick={() => router.push('/property')} 
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Browse Properties
+            </button>
+          </div>
+        </div>
+      </ContentWrapper>
+    )
   }
 
   return (
@@ -284,146 +441,177 @@ function BookingPage() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left side - Form */}
         <div className="space-y-8">
-          {/* Step 1 - Payment Method */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <span className="text-lg font-semibold text-slate-900">1.</span>
-              <h2 className="text-lg font-semibold text-slate-900">Add payment method</h2>
-            </div>
-
-            <div className="flex items-center justify-between p-4 border border-slate-200 rounded-xl">
+          {/* Step 1 - Add payment method */}
+          {currentStep === 1 && (
+            <div className="space-y-4">
               <div className="flex items-center space-x-3">
-                <div
-                  className="w-10 h-6 bg-blue-600 rounded text-white text-xs font-bold flex items-center justify-center">
-                  VISA
-                </div>
-                <span className="text-slate-600">Visa credit card</span>
+                <span className="text-lg font-semibold text-slate-900">1.</span>
+                <h2 className="text-lg font-semibold text-slate-900">Add payment method</h2>
               </div>
-              <button className="text-teal-600 font-medium text-sm hover:text-teal-700 transition-colors">
-                Change
-              </button>
-            </div>
 
-            {/* Booking Details */}
-            <div className="space-y-4 pt-4">
-              <h3 className="text-md font-medium text-slate-900">Booking Details</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Check-in Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.checkIn}
-                    onChange={(e) => setFormData(prev => ({...prev, checkIn: e.target.value}))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    required
-                  />
+              <div className="flex items-center justify-between p-4 border border-slate-200 rounded-xl">
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="w-10 h-6 bg-blue-600 rounded text-white text-xs font-bold flex items-center justify-center">
+                    VISA
+                  </div>
+                  <span className="text-slate-600">Visa credit card</span>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Check-out Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.checkOut}
-                    onChange={(e) => setFormData(prev => ({...prev, checkOut: e.target.value}))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Number of Guests
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={formData.numGuests}
-                    onChange={(e) => setFormData(prev => ({...prev, numGuests: parseInt(e.target.value) || 1}))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Total Amount (RM)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.totalAmount}
-                    onChange={(e) => setFormData(prev => ({...prev, totalAmount: parseFloat(e.target.value) || 0}))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="550.00"
-                  />
-                </div>
+                <button className="text-teal-600 font-medium text-sm hover:text-teal-700 transition-colors">
+                  Change
+                </button>
               </div>
 
               <div className="flex justify-end">
-                {currentStep < 3 && (
-                  <button
-                    onClick={handleNext}
-                    className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl transition-colors duration-200"
-                  >
-                    Next
-                  </button>
-                )}
+                <button
+                  onClick={handleNext}
+                  className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl transition-colors duration-200"
+                >
+                  Next
+                </button>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Step 2 - Message to Host */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <span className="text-lg font-semibold text-slate-900">2.</span>
-              <h2 className="text-lg font-semibold text-slate-900">Write a message to the host</h2>
-            </div>
-
-            <p className="text-slate-600 text-sm">
-              Let your host know a little about your visit and why their place is a good fit for you.
-            </p>
-
+          {/* Step 2 - Booking Details */}
+          {currentStep === 2 && (
             <div className="space-y-4">
-              <textarea
-                value={formData.message}
-                onChange={(e) => setFormData(prev => ({...prev, message: e.target.value}))}
-                placeholder="Tell your message in here"
-                className="w-full h-32 px-4 py-3 border border-slate-200 rounded-xl bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
-              />
+              <div className="flex items-center space-x-3">
+                <span className="text-lg font-semibold text-slate-900">2.</span>
+                <h2 className="text-lg font-semibold text-slate-900">Booking details</h2>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Start Month Counter */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Start Month
+                  </label>
+                  <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
+                    <div className="text-left">
+                      <div className="font-medium text-slate-900">{getStartMonthText()}</div>
+                      <div className="text-sm text-slate-500">Starting month for rental</div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={decrementStartMonth}
+                        className="w-8 h-8 flex items-center justify-center border border-slate-300 rounded-full hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={startMonthCount === 0}
+                      >
+                        <Minus size={16} className="text-slate-600" />
+                      </button>
+                      <span className="w-8 text-center font-medium text-slate-900">{startMonthCount}</span>
+                      <button
+                        onClick={incrementStartMonth}
+                        className="w-8 h-8 flex items-center justify-center border border-slate-300 rounded-full hover:border-slate-400 transition-colors"
+                      >
+                        <Plus size={16} className="text-slate-600" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Duration Counter */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Duration
+                  </label>
+                  <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
+                    <div className="text-left">
+                      <div className="font-medium text-slate-900">{getDurationText()}</div>
+                      <div className="text-sm text-slate-500">Rental duration</div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={decrementDuration}
+                        className="w-8 h-8 flex items-center justify-center border border-slate-300 rounded-full hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={durationMonths === 1}
+                      >
+                        <Minus size={16} className="text-slate-600" />
+                      </button>
+                      <span className="w-8 text-center font-medium text-slate-900">{durationMonths}</span>
+                      <button
+                        onClick={incrementDuration}
+                        className="w-8 h-8 flex items-center justify-center border border-slate-300 rounded-full hover:border-slate-400 transition-colors"
+                      >
+                        <Plus size={16} className="text-slate-600" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Show calculated dates for reference */}
+                <div className="space-y-2 p-3 bg-slate-50 rounded-lg">
+                  <div className="text-sm font-medium text-slate-700">Calculated Dates:</div>
+                  <div className="text-sm text-slate-600">
+                    Check-in: {formData.checkIn ? new Date(formData.checkIn).toLocaleDateString() : 'Not set'}
+                  </div>
+                  <div className="text-sm text-slate-600">
+                    Check-out: {formData.checkOut ? new Date(formData.checkOut).toLocaleDateString() : 'Not set'}
+                  </div>
+                </div>
+              </div>
 
               <div className="flex justify-between">
-                {currentStep > 1 && (
+                <button
+                  onClick={handlePrevious}
+                  className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-xl transition-colors duration-200"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl transition-colors duration-200"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 - Write a message to the host */}
+          {currentStep === 3 && (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <span className="text-lg font-semibold text-slate-900">3.</span>
+                <h2 className="text-lg font-semibold text-slate-900">Write a message to the host</h2>
+              </div>
+
+              <p className="text-slate-600 text-sm">
+                Let your host know a little about your visit and why their place is a good fit for you.
+              </p>
+
+              <div className="space-y-4">
+                <textarea
+                  value={formData.message}
+                  onChange={(e) => setFormData(prev => ({...prev, message: e.target.value}))}
+                  placeholder="Tell your message in here"
+                  className="w-full h-32 px-4 py-3 border border-slate-200 rounded-xl bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                />
+
+                <div className="flex justify-between">
                   <button
                     onClick={handlePrevious}
                     className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-xl transition-colors duration-200"
                   >
                     Previous
                   </button>
-                )}
-                {currentStep < 3 && (
                   <button
                     onClick={handleNext}
-                    className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl transition-colors duration-200 ml-auto"
+                    className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl transition-colors duration-200"
                   >
                     Next
                   </button>
-                )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Step 3 - Review Request */}
-          {currentStep >= 3 && (
+          {/* Step 4 - Review Request */}
+          {currentStep === 4 && (
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
-                <span className="text-lg font-semibold text-slate-900">3.</span>
+                <span className="text-lg font-semibold text-slate-900">4.</span>
                 <h2 className="text-lg font-semibold text-slate-900">Review your request</h2>
               </div>
               
@@ -433,35 +621,28 @@ function BookingPage() {
                   <p className="text-slate-900 font-medium">VISA credit card</p>
                 </div>
                 
+                <div>
+                  <p className="text-sm text-slate-600 mb-2">Booking Details:</p>
+                  <div className="space-y-1">
+                    <p className="text-slate-900">Check-in: {formData.checkIn ? new Date(formData.checkIn).toLocaleDateString() : 'Not selected'}</p>
+                    <p className="text-slate-900">Check-out: {formData.checkOut ? new Date(formData.checkOut).toLocaleDateString() : 'Not selected'}</p>
+                    <p className="text-slate-900">Duration: {getDurationText()}</p>
+                    <p className="text-slate-900">Total: RM {formData.totalAmount}</p>
+                  </div>
+                </div>
+                
                 {formData.message && (
                   <div>
                     <p className="text-sm text-slate-600 mb-2">Message to Host:</p>
                     <p className="text-slate-900">{formData.message}</p>
                   </div>
                 )}
-                
-                <div>
-                  <p className="text-sm text-slate-600 mb-2">Booking Details:</p>
-                  <div className="space-y-1">
-                    <p className="text-slate-900">Check-in: {formData.checkIn || 'Not selected'}</p>
-                    <p className="text-slate-900">Check-out: {formData.checkOut || 'Not selected'}</p>
-                    <p className="text-slate-900">Guests: {formData.numGuests}</p>
-                    <p className="text-slate-900">Total: RM {formData.totalAmount}</p>
-                  </div>
-                </div>
               </div>
 
               {/* Error Message */}
               {submitError && (
                 <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl">
                   {submitError}
-                </div>
-              )}
-
-              {/* Success Message */}
-              {currentStep === 3 && (
-                <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-xl">
-                  Booking submitted successfully! You will be redirected to your bookings.
                 </div>
               )}
 
@@ -551,21 +732,24 @@ function BookingPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Monthly rent</span>
                   <span className="text-slate-900">
-                    RM {property ? (typeof property.price === 'string' ? parseFloat(property.price) : property.price) : 0}
+                    RM {getPropertyPrice()}
                   </span>
                 </div>
 
-                {formData.totalAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Total amount</span>
-                    <span className="text-slate-900">RM {formData.totalAmount}</span>
-                  </div>
-                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Duration</span>
+                  <span className="text-slate-900">{getDurationText()}</span>
+                </div>
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Subtotal (RM {getPropertyPrice()} × {durationMonths})</span>
+                  <span className="text-slate-900">RM {getPropertyPrice() * durationMonths}</span>
+                </div>
 
                 <div className="flex justify-between text-sm font-medium border-t border-slate-200 pt-3">
                   <span className="text-slate-900">Total</span>
                   <span className="text-slate-900">
-                    RM {formData.totalAmount || (property ? (typeof property.price === 'string' ? parseFloat(property.price) : property.price) : 0)}
+                    RM {formData.totalAmount}
                   </span>
                 </div>
               </div>

@@ -1,93 +1,340 @@
 'use client'
 
 import Image from 'next/image'
+import { useState, useEffect, use } from 'react'
 import ContentWrapper from '@/components/ContentWrapper'
 import BarProperty from '@/components/BarProperty'
 import ImageGallery from '@/components/ImageGallery'
-import { Download, ExternalLink } from 'lucide-react'
-import { use } from 'react'
+import MapViewer from '@/components/MapViewer'
+import { Download, ExternalLink, Calendar, User, MapPin, Home } from 'lucide-react'
+import useAuthStore from '@/stores/authStore'
 
-function RentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+interface BookingDetail {
+  id: string
+  startDate: string
+  endDate: string
+  rentAmount: string
+  currencyCode: string
+  securityDeposit: string | null
+  status: string
+  notes: string
+  createdAt: string
+  updatedAt: string
+  propertyId: string
+  tenantId: string
+  landlordId: string
+  property: {
+    id: string
+    title: string
+    description: string
+    address: string
+    city: string
+    state: string
+    zipCode: string
+    country: string
+    price: string
+    currencyCode: string
+    bedrooms: number
+    bathrooms: number
+    areaSqm: number
+    furnished: boolean
+    isAvailable: boolean
+    images: string[]
+    latitude: number
+    longitude: number
+    placeId: string | null
+    projectName: string | null
+    developer: string | null
+    code: string
+    status: string
+    createdAt: string
+    updatedAt: string
+    ownerId: string
+    propertyTypeId: string
+    amenities: Array<{
+      propertyId: string
+      amenityId: string
+      amenity: {
+        id: string
+        name: string
+        category: string
+      }
+    }>
+  }
+  tenant: {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+    name: string
+    phone: string
+  }
+  landlord: {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+    name: string
+    phone: string
+  }
+}
+
+interface BookingResponse {
+  success: boolean
+  data: {
+    booking: BookingDetail
+  }
+}
+
+function RentDetailPage({ params }: { readonly params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const [booking, setBooking] = useState<BookingDetail | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { isLoggedIn } = useAuthStore()
 
-  const tempImage: [string, string, string, string, string] = [
-    'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png',
-    'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_ockiwbockiwbocki_vmmlhm.png',
-    'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_5ckgfc5ckgfc5ckg_k9uzft.png',
-    'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_7seyqi7seyqi7sey_jgzhig.png',
-    'https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211362/rentverse-rooms/Gemini_Generated_Image_2wt0y22wt0y22wt0_ocdafo.png',
-  ]
+  useEffect(() => {
+    const fetchBookingDetail = async () => {
+      if (!isLoggedIn || !id) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const token = localStorage.getItem('authToken')
+        if (!token) {
+          setError('Authentication token not found')
+          setIsLoading(false)
+          return
+        }
+
+        const response = await fetch(`/api/bookings/${id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch booking details: ${response.status}`)
+        }
+
+        const data: BookingResponse = await response.json()
+        
+        if (data.success) {
+          setBooking(data.data.booking)
+        } else {
+          setError('Failed to load booking details')
+        }
+      } catch (err) {
+        console.error('Error fetching booking details:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load booking details')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchBookingDetail()
+  }, [id, isLoggedIn])
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const formatAmount = (amount: string, currency: string) => {
+    const num = parseFloat(amount)
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency === 'IDR' ? 'IDR' : 'MYR',
+      minimumFractionDigits: 0
+    }).format(num)
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'approved':
+        return 'bg-green-100 text-green-800'
+      case 'rejected':
+        return 'bg-red-100 text-red-800'
+      case 'active':
+        return 'bg-blue-100 text-blue-800'
+      case 'completed':
+        return 'bg-gray-100 text-gray-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
 
   // Generate invoice number based on id
-  const invoiceNumber = `INV${id.toUpperCase()}`
+  const invoiceNumber = `INV${id.toUpperCase().slice(0, 8)}`
 
   const handleShareableLink = () => {
     const url = `${window.location.origin}/rents/${id}`
     navigator.clipboard.writeText(url)
-    // You can add a toast notification here
     console.log('Shareable link copied to clipboard')
   }
 
   const handleDownloadDocument = () => {
-    // Handle document download logic here
     console.log('Downloading agreement document')
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <ContentWrapper>
+        <div className="flex-1 flex items-center justify-center py-20">
+          <div className="text-center space-y-6 max-w-md">
+            <h3 className="text-xl font-sans font-medium text-slate-900">
+              Please log in to view booking details
+            </h3>
+          </div>
+        </div>
+      </ContentWrapper>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <ContentWrapper>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto"></div>
+            <p className="text-slate-600">Loading booking details...</p>
+          </div>
+        </div>
+      </ContentWrapper>
+    )
+  }
+
+  if (error || !booking) {
+    return (
+      <ContentWrapper>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center space-y-4">
+            <p className="text-red-600">{error || 'Booking not found'}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </ContentWrapper>
+    )
   }
 
   return (
     <ContentWrapper>
-      <BarProperty title={`Tijani Raja Dewa - Apartements # ${invoiceNumber}`} />
+      <BarProperty title={`${booking.property.title} - ${invoiceNumber}`} />
 
       <section className="space-y-6">
-        <ImageGallery images={tempImage} />
+        <ImageGallery images={booking.property.images as [string, string, string, string, string]} />
 
         {/* Main content area */}
         <div className="mx-auto w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left side - Property details and description */}
           <div className="lg:col-span-2 space-y-6">
             {/* Property header */}
-            <div className="flex justify-between space-y-4">
-              <div>
-                <h1 className="text-2xl font-semibold text-teal-600">
-                  Available to rent in 3 months!
-                </h1>
-                <p className="text-slate-600 text-lg">
-                  2 bedrooms • 1 bathroom • 123 Sqft
-                </p>
-              </div>
-
-              {/* Stats section */}
-              <div className="flex items-center space-x-8">
-                <div className="flex items-center space-x-8">
-                  <Image
-                    src="https://res.cloudinary.com/dqhuvu22u/image/upload/v1758219434/rentverse-base/icon-star_kwohms.png"
-                    width={24}
-                    height={24}
-                    alt="Star icon"
-                    className="w-12 h-12"
-                  />
-                  <div className="text-center">
-                    <div className="text-xl font-semibold text-slate-900">4.8</div>
-                    <div className="text-sm text-slate-500">Guest reviews</div>
+            <div className="flex justify-between items-start">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <h1 className="text-2xl font-semibold text-slate-900">
+                    {booking.property.title}
+                  </h1>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                    {booking.status}
+                  </div>
+                </div>
+                
+                <div className="flex items-center text-slate-600 space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <Home size={16} />
+                    <span>{booking.property.bedrooms} bedrooms • {booking.property.bathrooms} bathrooms • {booking.property.areaSqm} sqm</span>
                   </div>
                 </div>
 
-                <div className="text-center">
-                  <div className="text-xl font-semibold text-slate-900">2K</div>
-                  <div className="text-sm text-slate-500">Viewers</div>
+                <div className="flex items-center text-slate-600 space-x-1">
+                  <MapPin size={16} />
+                  <span>{booking.property.address}, {booking.property.city}, {booking.property.state}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Booking Details */}
+            <div className="bg-slate-50 rounded-xl p-6 space-y-4">
+              <h3 className="text-lg font-semibold text-slate-900">Booking Details</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-3">
+                  <Calendar size={16} className="text-slate-500" />
+                  <div>
+                    <p className="text-sm text-slate-500">Check-in</p>
+                    <p className="font-medium text-slate-900">{formatDate(booking.startDate)}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <Calendar size={16} className="text-slate-500" />
+                  <div>
+                    <p className="text-sm text-slate-500">Check-out</p>
+                    <p className="font-medium text-slate-900">{formatDate(booking.endDate)}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <User size={16} className="text-slate-500" />
+                  <div>
+                    <p className="text-sm text-slate-500">Landlord</p>
+                    <p className="font-medium text-slate-900">{booking.landlord.name}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                  <div>
+                    <p className="text-sm text-slate-500">Total Amount</p>
+                    <p className="font-medium text-slate-900">{formatAmount(booking.rentAmount, booking.currencyCode)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {booking.notes && (
+                <div>
+                  <p className="text-sm text-slate-500 mb-1">Notes</p>
+                  <p className="text-slate-700">{booking.notes}</p>
+                </div>
+              )}
             </div>
 
             {/* Description */}
             <div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-3">Property Description</h3>
               <p className="text-slate-600 leading-relaxed">
-                Lorem ipsum dolor sit amet consectetur. Nisl ac mi turpis commodo. Velit tristique
-                lobortis imperdiet aliquam eget. Ultrices diam fringilla sollicitudin dignissim elementum
-                ultrices. Volutpat volutpat in amet ipsum libero. Amet ultrices sit pretium eu enim mi.
-                Sit euismod vel posuere adipiscing nisi auctor. Sit a malesuada arcu morbi amet. Ut nunc
-                mauris dolor sit sagittis eget sed. Nisl porttitor in nascetur maecenas semper massa.
+                {booking.property.description}
               </p>
             </div>
+
+            {/* Amenities */}
+            {booking.property.amenities && booking.property.amenities.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">Amenities</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {booking.property.amenities.map((amenity) => (
+                    <div key={amenity.amenityId} className="flex items-center space-x-2 text-slate-600">
+                      <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                      <span className="text-sm">{amenity.amenity.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right side - Agreement box */}
@@ -110,7 +357,7 @@ function RentDetailPage({ params }: { params: Promise<{ id: string }> }) {
                       Your agreement
                     </h3>
                     <p className="text-sm text-slate-500">
-                      has been release
+                      Status: {booking.status}
                     </p>
                   </div>
                 </div>
@@ -140,10 +387,20 @@ function RentDetailPage({ params }: { params: Promise<{ id: string }> }) {
                 {/* Download Agreement */}
                 <button
                   onClick={handleDownloadDocument}
-                  className="w-full flex items-center justify-center space-x-2 bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-4 rounded-xl transition-colors duration-200"
+                  disabled={booking.status.toLowerCase() === 'pending'}
+                  className={`w-full flex items-center justify-center space-x-2 font-medium py-3 px-4 rounded-xl transition-colors duration-200 ${
+                    booking.status.toLowerCase() === 'pending'
+                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                      : 'bg-teal-600 hover:bg-teal-700 text-white'
+                  }`}
                 >
                   <Download size={16} />
-                  <span>Download document</span>
+                  <span>
+                    {booking.status.toLowerCase() === 'pending' 
+                      ? 'Document not available' 
+                      : 'Download document'
+                    }
+                  </span>
                 </button>
 
                 {/* Invoice Information */}
@@ -163,15 +420,46 @@ function RentDetailPage({ params }: { params: Promise<{ id: string }> }) {
       <section className="mx-auto w-full max-w-6xl space-y-6 py-8">
         <div className="text-center space-y-2">
           <h2 className="font-serif text-3xl text-teal-900">Where you will be</h2>
-          <p className="text-lg text-slate-600">Panji, Kota Bharu, Kelantan, Malaysia</p>
+          <p className="text-lg text-slate-600">{booking.property.address}, {booking.property.city}, {booking.property.state}</p>
         </div>
 
         {/* Map container */}
         <div className="w-full h-80 bg-slate-100 rounded-2xl overflow-hidden border border-slate-200">
-          {/* Map placeholder - replace with actual map component */}
-          <div className="w-full h-full flex items-center justify-center text-slate-500">
-            Map will be displayed here
-          </div>
+          {booking.property.latitude && booking.property.longitude ? (
+            <MapViewer
+              center={{
+                lng: booking.property.longitude,
+                lat: booking.property.latitude
+              }}
+              zoom={15}
+              style="streets-v2"
+              className="w-full h-full"
+              height="100%"
+              width="100%"
+              markers={[
+                {
+                  lng: booking.property.longitude,
+                  lat: booking.property.latitude,
+                  popup: `
+                    <div class="p-3">
+                      <h3 class="font-semibold text-slate-900 mb-2">${booking.property.title}</h3>
+                      <p class="text-sm text-slate-600 mb-2">${booking.property.address}</p>
+                      <p class="text-sm text-slate-600">${booking.property.city}, ${booking.property.state}</p>
+                    </div>
+                  `,
+                  color: '#0d9488'
+                }
+              ]}
+              interactive={true}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-500">
+              <div className="text-center">
+                <MapPin size={48} className="mx-auto mb-2 text-slate-400" />
+                <p>Location not available</p>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </ContentWrapper>
