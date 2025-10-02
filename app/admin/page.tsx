@@ -1,291 +1,293 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState, useEffect } from 'react'
 import ContentWrapper from '@/components/ContentWrapper'
-import CardProperty from '@/components/CardProperty'
-import type { Property } from '@/types/property'
-import { Plus, Filter } from 'lucide-react'
+import { Plus, Filter, Clock, RefreshCw, Bot } from 'lucide-react'
+import useAuthStore from '@/stores/authStore'
 
 // Extended property type for UI with admin status
-interface PropertyWithStatus extends Property {
+interface PropertyApproval {
+  id: string
+  propertyId: string
+  reviewerId: string | null
   status: string
-  owner?: string
+  notes: string | null
+  reviewedAt: string | null
+  createdAt: string
+  property: {
+    id: string
+    title: string
+    description: string
+    address: string
+    city: string
+    state: string
+    zipCode: string
+    country: string
+    price: string
+    currencyCode: string
+    bedrooms: number
+    bathrooms: number
+    areaSqm: number
+    furnished: boolean
+    isAvailable: boolean
+    images: string[]
+    latitude: number
+    longitude: number
+    placeId: string | null
+    projectName: string | null
+    developer: string | null
+    code: string
+    status: string
+    createdAt: string
+    updatedAt: string
+    ownerId: string
+    propertyTypeId: string
+    owner: {
+      id: string
+      email: string
+      firstName: string
+      lastName: string
+      name: string
+    }
+    propertyType: {
+      id: string
+      code: string
+      name: string
+      description: string
+      icon: string
+      isActive: boolean
+      createdAt: string
+      updatedAt: string
+    }
+  }
 }
 
-function getStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'Published':
-      return 'bg-orange-100 text-orange-600'
-    case 'Pending':
-      return 'bg-yellow-100 text-yellow-600'
-    default:
-      return 'bg-slate-100 text-slate-600'
+interface PendingApprovalsResponse {
+  success: boolean
+  data: {
+    approvals: PropertyApproval[]
+    pagination: {
+      page: number
+      limit: number
+      total: number
+      pages: number
+    }
+  }
+}
+
+// User interface for admin check
+interface User {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  name: string
+  dateOfBirth: string
+  phone: string
+  role: string
+  isActive: boolean
+  createdAt: string
+}
+
+interface AuthMeResponse {
+  success: boolean
+  data: {
+    user: User
   }
 }
 
 function AdminPage() {
-  // Sample all properties data for admin view
-  const allProperties: PropertyWithStatus[] = [
-    {
-      id: '1',
-      code: 'TRD001',
-      title: 'Tijani Raja Dewa - Apartements',
-      description: 'Modern apartment in the heart of Panji',
-      address: 'Jalan Tijani Raja Dewa',
-      city: 'Kota Bharu',
-      state: 'Kelantan',
-      zipCode: '15000',
-      price: 550,
-      type: 'APARTMENT' as const,
-      bedrooms: 2,
-      bathrooms: 1,
-      area: 123,
-      areaSqm: 123,
-      isAvailable: true,
-      viewCount: 150,
-      averageRating: 4.8,
-      totalRatings: 25,
-      isFavorited: false,
-      favoriteCount: 12,
-      images: ['https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png'],
-      amenities: ['parking', 'wifi', 'air-conditioning'],
-      latitude: 6.1254,
-      longitude: 102.2386,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z',
-      status: 'Published',
-      owner: 'John Doe',
-    },
-    {
-      id: '2',
-      code: 'RSA002',
-      title: 'Residensi Setia Alam',
-      description: 'Luxury condominium with modern facilities',
-      address: 'Setia Alam Boulevard',
-      city: 'Shah Alam',
-      state: 'Selangor',
-      zipCode: '40170',
-      price: 890,
-      type: 'CONDO' as const,
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 145,
-      areaSqm: 145,
-      isAvailable: true,
-      viewCount: 200,
-      averageRating: 4.6,
-      totalRatings: 18,
-      isFavorited: false,
-      favoriteCount: 8,
-      images: ['https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_ockiwbockiwbocki_vmmlhm.png'],
-      amenities: ['swimming-pool', 'gym', 'parking', 'wifi'],
-      latitude: 3.0738,
-      longitude: 101.4953,
-      createdAt: '2024-01-02T00:00:00Z',
-      updatedAt: '2024-01-02T00:00:00Z',
-      status: 'Published',
-      owner: 'Jane Smith',
-    },
-    {
-      id: '3',
-      code: 'BCT003',
-      title: 'Batu Caves Townhouses',
-      description: 'Spacious townhouse near Batu Caves',
-      address: 'Jalan Batu Caves',
-      city: 'Batu Caves',
-      state: 'Selangor',
-      zipCode: '68100',
-      price: 1200,
-      type: 'HOUSE' as const,
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 185,
-      areaSqm: 185,
-      isAvailable: false,
-      viewCount: 95,
-      averageRating: 4.9,
-      totalRatings: 12,
-      isFavorited: true,
-      favoriteCount: 15,
-      images: ['https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_5ckgfc5ckgfc5ckg_k9uzft.png'],
-      amenities: ['parking', 'garden', 'wifi'],
-      latitude: 3.2370,
-      longitude: 101.6840,
-      createdAt: '2024-01-03T00:00:00Z',
-      updatedAt: '2024-01-03T00:00:00Z',
-      status: 'Pending',
-      owner: 'Mike Johnson',
-    },
-    {
-      id: '4',
-      code: 'KLS004',
-      title: 'KL City Centre Studio',
-      description: 'Modern studio in the heart of KL',
-      address: 'Jalan Bukit Bintang',
-      city: 'Kuala Lumpur',
-      state: 'Federal Territory',
-      zipCode: '50200',
-      price: 750,
-      type: 'STUDIO' as const,
-      bedrooms: 1,
-      bathrooms: 1,
-      area: 65,
-      areaSqm: 65,
-      isAvailable: true,
-      viewCount: 300,
-      averageRating: 4.4,
-      totalRatings: 35,
-      isFavorited: false,
-      favoriteCount: 22,
-      images: ['https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211360/rentverse-rooms/Gemini_Generated_Image_7seyqi7seyqi7sey_jgzhig.png'],
-      amenities: ['wifi', 'air-conditioning', 'security'],
-      latitude: 3.1478,
-      longitude: 101.7089,
-      createdAt: '2024-01-04T00:00:00Z',
-      updatedAt: '2024-01-04T00:00:00Z',
-      status: 'Published',
-      owner: 'Sarah Lee',
-    },
-    {
-      id: '5',
-      code: 'PHH005',
-      title: 'Penang Heritage House',
-      description: 'Traditional heritage house in George Town',
-      address: 'Lebuh Armenian',
-      city: 'George Town',
-      state: 'Penang',
-      zipCode: '10200',
-      price: 980,
-      type: 'HOUSE' as const,
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 220,
-      areaSqm: 220,
-      isAvailable: true,
-      viewCount: 180,
-      averageRating: 4.7,
-      totalRatings: 28,
-      isFavorited: true,
-      favoriteCount: 19,
-      images: ['https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758211362/rentverse-rooms/Gemini_Generated_Image_2wt0y22wt0y22wt0_ocdafo.png'],
-      amenities: ['parking', 'wifi', 'heritage-features'],
-      latitude: 5.4164,
-      longitude: 100.3327,
-      createdAt: '2024-01-05T00:00:00Z',
-      updatedAt: '2024-01-05T00:00:00Z',
-      status: 'Published',
-      owner: 'David Tan',
-    },
-    {
-      id: '6',
-      code: 'CMV006',
-      title: 'Cyberjaya Modern Villa',
-      description: 'Luxury villa in Cyberjaya tech hub',
-      address: 'Persiaran APEC',
-      city: 'Cyberjaya',
-      state: 'Selangor',
-      zipCode: '63000',
-      price: 1500,
-      type: 'VILLA' as const,
-      bedrooms: 5,
-      bathrooms: 4,
-      area: 300,
-      areaSqm: 300,
-      isAvailable: false,
-      viewCount: 75,
-      averageRating: 4.9,
-      totalRatings: 8,
-      isFavorited: false,
-      favoriteCount: 25,
-      images: ['https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758016984/rentverse-rooms/Gemini_Generated_Image_5hdui35hdui35hdu_s34nx6.png'],
-      amenities: ['swimming-pool', 'gym', 'parking', 'garden', 'security'],
-      latitude: 2.9213,
-      longitude: 101.6559,
-      createdAt: '2024-01-06T00:00:00Z',
-      updatedAt: '2024-01-06T00:00:00Z',
-      status: 'Draft',
-      owner: 'Lisa Wong',
-    },
-  ]
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [pendingApprovals, setPendingApprovals] = useState<PropertyApproval[]>([])
+  const [isLoadingApprovals, setIsLoadingApprovals] = useState(false)
+  const [autoReviewEnabled, setAutoReviewEnabled] = useState(false)
+  const [isTogglingAutoReview, setIsTogglingAutoReview] = useState(false)
+  const { isLoggedIn } = useAuthStore()
 
-  return (
-    <ContentWrapper>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-2xl font-sans font-medium text-slate-900">All listings</h3>
-        <div className="flex items-center space-x-4">
-          {/* Filter Button */}
-          <button
-            className="flex items-center space-x-2 px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors">
-            <Filter size={16} />
-            <span className="text-sm font-medium">111 reviews</span>
-          </button>
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      if (!isLoggedIn) {
+        setIsLoading(false)
+        return
+      }
 
-          {/* Add Review Button */}
-          <Link
-            href="/admin/add-review"
-            className="flex items-center space-x-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl transition-colors duration-200"
-          >
-            <Plus size={16} />
-            <span className="text-sm font-medium">Add review</span>
-          </Link>
-        </div>
-      </div>
+      try {
+        const token = localStorage.getItem('authToken')
+        if (!token) {
+          setError('Authentication token not found')
+          setIsLoading(false)
+          return
+        }
 
-      {/* Properties Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {allProperties.map((property) => (
-          <div key={property.id} className="group relative">
-            {/* Status Badge */}
-            <div className="absolute top-4 right-4 z-10">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                getStatusBadgeClass(property.status)
-              }`}>
-                {property.status}
-              </span>
-            </div>
+        const response = await fetch('/api/auth/me', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        })
 
-            <CardProperty property={property} />
+        if (!response.ok) {
+          throw new Error(`Failed to fetch user data: ${response.status}`)
+        }
 
-            {/* Admin Management Actions */}
-            <div className="mt-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex space-x-2">
-                  <Link
-                    href={`/admin/property/${property.id}`}
-                    className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
-                  >
-                    View Details
-                  </Link>
-                  <span className="text-slate-300">•</span>
-                  <Link
-                    href={`/admin/property/${property.id}/edit`}
-                    className="text-sm text-slate-600 hover:text-slate-700 font-medium transition-colors"
-                  >
-                    Edit
-                  </Link>
-                </div>
-                <button className="text-sm text-slate-500 hover:text-slate-600 transition-colors">
-                  Actions
-                </button>
-              </div>
+        const data: AuthMeResponse = await response.json()
+        
+        if (data.success) {
+          setUser(data.data.user)
+        } else {
+          setError('Failed to load user data')
+        }
+      } catch (err) {
+        console.error('Error checking admin role:', err)
+        setError(err instanceof Error ? err.message : 'Failed to verify admin access')
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-              {/* Owner Info */}
-              <div className="text-xs text-slate-500">
-                Owner: {property.owner}
-              </div>
-            </div>
+    checkAdminRole()
+  }, [isLoggedIn])
+
+  // Fetch pending approvals
+  useEffect(() => {
+    const fetchPendingApprovals = async () => {
+      if (!user || user.role !== 'ADMIN') return
+
+      try {
+        setIsLoadingApprovals(true)
+        const token = localStorage.getItem('authToken')
+        if (!token) {
+          throw new Error('Authentication token not found')
+        }
+
+        const response = await fetch('https://rentverse-be.jokoyuliyanto.my.id/api/properties/pending-approval', {
+          method: 'GET',
+          headers: {
+            'accept': '*/*',
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch pending approvals: ${response.status}`)
+        }
+
+        const data: PendingApprovalsResponse = await response.json()
+        
+        if (data.success) {
+          setPendingApprovals(data.data.approvals)
+        } else {
+          setError('Failed to load pending approvals')
+        }
+      } catch (err) {
+        console.error('Error fetching pending approvals:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load pending approvals')
+      } finally {
+        setIsLoadingApprovals(false)
+      }
+    }
+
+    fetchPendingApprovals()
+  }, [user])
+
+  // Fetch auto review status
+  useEffect(() => {
+    const fetchAutoReviewStatus = async () => {
+      if (!user || user.role !== 'ADMIN') return
+
+      try {
+        const token = localStorage.getItem('authToken')
+        if (!token) return
+
+        const response = await fetch('https://rentverse-be.jokoyuliyanto.my.id/api/predictions/status', {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.data.status) {
+            setAutoReviewEnabled(data.data.status.isEnabled)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching auto review status:', err)
+        // Don't set error for this as it's not critical
+      }
+    }
+
+    fetchAutoReviewStatus()
+  }, [user])
+
+  const formatPrice = (price: string, currency: string) => {
+    const num = parseFloat(price)
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency === 'MYR' ? 'MYR' : 'USD',
+      minimumFractionDigits: 0
+    }).format(num)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <ContentWrapper>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto"></div>
+            <p className="text-slate-600">Verifying admin access...</p>
           </div>
-        ))}
-      </div>
+        </div>
+      </ContentWrapper>
+    )
+  }
 
-      {/* Empty state fallback */}
-      {allProperties.length === 0 && (
-        <div className="flex-1 flex items-center justify-center py-16">
+  // Show error state
+  if (error || !user) {
+    return (
+      <ContentWrapper>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center space-y-4">
+            <p className="text-red-600">{error || 'Access denied'}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </ContentWrapper>
+    )
+  }
+
+  // Check if user has admin role
+  if (user.role !== 'ADMIN') {
+    return (
+      <ContentWrapper>
+        <div className="flex items-center justify-center py-20">
           <div className="text-center space-y-6 max-w-md">
             <div className="flex justify-center">
               <Image
                 src="https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758310328/rentverse-base/image_17_hsznyz.png"
-                alt="No properties"
+                alt="Access denied"
                 width={240}
                 height={240}
                 className="w-60 h-60 object-contain"
@@ -293,44 +295,328 @@ function AdminPage() {
             </div>
             <div className="space-y-3">
               <h3 className="text-xl font-sans font-medium text-slate-900">
-                No properties found
+                Access Denied
               </h3>
               <p className="text-base text-slate-500 leading-relaxed">
-                There are currently no properties in the system
+                You don&apos;t have permission to access the admin panel. Only administrators can view this page.
+              </p>
+            </div>
+            <Link
+              href="/"
+              className="inline-block px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              Go to Home
+            </Link>
+          </div>
+        </div>
+      </ContentWrapper>
+    )
+  }
+
+  // Toggle auto review function
+  const toggleAutoReview = async () => {
+    try {
+      setIsTogglingAutoReview(true)
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        throw new Error('Authentication token not found')
+      }
+
+      const response = await fetch('https://rentverse-be.jokoyuliyanto.my.id/api/predictions/toggle', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          enabled: !autoReviewEnabled
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to toggle auto review: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setAutoReviewEnabled(data.data.status.isEnabled)
+      } else {
+        throw new Error('Failed to toggle auto review')
+      }
+    } catch (err) {
+      console.error('Error toggling auto review:', err)
+      setError(err instanceof Error ? err.message : 'Failed to toggle auto review')
+    } finally {
+      setIsTogglingAutoReview(false)
+    }
+  }
+
+  return (
+    <ContentWrapper>
+      {/* Statistics Dashboard */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-sans font-bold text-slate-900 mb-6">Admin Dashboard</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Total Pending */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Total Pending</p>
+                <p className="text-3xl font-bold text-slate-900 mt-1">
+                  {pendingApprovals.length}
+                </p>
+              </div>
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Filter className="w-6 h-6 text-yellow-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* Awaiting Review */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Awaiting Review</p>
+                <p className="text-3xl font-bold text-slate-900 mt-1">
+                  {pendingApprovals.filter(approval => approval.status === 'PENDING').length}
+                </p>
+              </div>
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <Clock className="w-6 h-6 text-orange-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* Submitted Today */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Submitted Today</p>
+                <p className="text-3xl font-bold text-slate-900 mt-1">
+                  {pendingApprovals.filter(approval => {
+                    const today = new Date().toDateString()
+                    const submittedDate = new Date(approval.createdAt).toDateString()
+                    return today === submittedDate
+                  }).length}
+                </p>
+              </div>
+              <div className="p-3 bg-teal-100 rounded-lg">
+                <Plus className="w-6 h-6 text-teal-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Auto Review Toggle */}
+      <div className="mb-8">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-teal-100 rounded-lg">
+                <Bot className="w-6 h-6 text-teal-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Auto review</h3>
+                <p className="text-sm text-slate-500">Automatically review and approve properties using AI</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-slate-600 font-medium">
+                {autoReviewEnabled ? 'ON' : 'OFF'}
+              </span>
+              <button
+                onClick={toggleAutoReview}
+                disabled={isTogglingAutoReview}
+                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                  autoReviewEnabled 
+                    ? 'bg-teal-600' 
+                    : 'bg-slate-300'
+                } ${isTogglingAutoReview ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span
+                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
+                    autoReviewEnabled ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <div className="bg-teal-50 px-3 py-1 rounded-full">
+                <span className="text-sm font-medium text-teal-700">RevAI</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="text-xl font-sans font-medium text-slate-900">Properties Pending Approval</h3>
+        <div className="flex items-center space-x-4">
+          {/* Refresh Button */}
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center space-x-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl transition-colors duration-200"
+          >
+            <RefreshCw size={16} />
+            <span className="text-sm font-medium">Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Loading State for Approvals */}
+      {isLoadingApprovals && (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto"></div>
+            <p className="text-slate-600">Loading pending approvals...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Properties Grid */}
+      {!isLoadingApprovals && (
+        <div className="space-y-6">
+          {pendingApprovals.map((approval) => (
+            <div key={approval.id} className="group relative bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="flex flex-col md:flex-row">
+                {/* Property Image */}
+                <div className="md:w-1/3">
+                  <div className="relative h-48 md:h-full">
+                    <Image
+                      src={approval.property.images[0] || '/placeholder-property.jpg'}
+                      alt={approval.property.title}
+                      fill
+                      className="object-cover"
+                    />
+                    {/* Status Badge */}
+                    <div className="absolute top-4 right-4">
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        PENDING
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Property Details */}
+                <div className="flex-1 p-6">
+                  <div className="flex flex-col h-full">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-semibold text-slate-900 mb-1">
+                          {approval.property.title}
+                        </h3>
+                        <p className="text-slate-600 text-sm mb-2">
+                          {approval.property.address}, {approval.property.city}, {approval.property.state}
+                        </p>
+                        <p className="text-slate-500 text-sm">
+                          Code: {approval.property.code}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-slate-900">
+                          {formatPrice(approval.property.price, approval.property.currencyCode)}
+                        </p>
+                        <p className="text-sm text-slate-500">per month</p>
+                      </div>
+                    </div>
+
+                    {/* Property Info */}
+                    <div className="flex items-center text-slate-600 space-x-4 mb-4">
+                      <span>{approval.property.bedrooms} bedrooms</span>
+                      <span>•</span>
+                      <span>{approval.property.bathrooms} bathrooms</span>
+                      <span>•</span>
+                      <span>{approval.property.areaSqm} sqm</span>
+                      <span>•</span>
+                      <span>{approval.property.furnished ? 'Furnished' : 'Unfurnished'}</span>
+                    </div>
+
+                    {/* Owner Info */}
+                    <div className="mb-4">
+                      <p className="text-sm text-slate-500">
+                        <span className="font-medium">Owner:</span> {approval.property.owner.name}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        <span className="font-medium">Email:</span> {approval.property.owner.email}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        <span className="font-medium">Type:</span> {approval.property.propertyType.name} {approval.property.propertyType.icon}
+                      </p>
+                    </div>
+
+                    {/* Submission Date */}
+                    <div className="mb-4">
+                      <p className="text-sm text-slate-500">
+                        <span className="font-medium">Submitted:</span> {formatDate(approval.createdAt)}
+                      </p>
+                    </div>
+
+                    {/* Description */}
+                    <div className="mb-6">
+                      <p className="text-sm text-slate-600 line-clamp-2">
+                        {approval.property.description}
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex space-x-3">
+                        <Link
+                          href={`/property/${approval.property.id}`}
+                          className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                        >
+                          View Property
+                        </Link>
+                        <span className="text-slate-300">•</span>
+                        <button className="text-sm text-slate-600 hover:text-slate-700 font-medium transition-colors">
+                          View Details
+                        </button>
+                      </div>
+                      <div className="flex space-x-3">
+                        <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                          Approve
+                        </button>
+                        <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoadingApprovals && pendingApprovals.length === 0 && (
+        <div className="flex-1 flex items-center justify-center py-16">
+          <div className="text-center space-y-6 max-w-md">
+            <div className="flex justify-center">
+              <Image
+                src="https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1758310328/rentverse-base/image_17_hsznyz.png"
+                alt="No pending approvals"
+                width={240}
+                height={240}
+                className="w-60 h-60 object-contain"
+              />
+            </div>
+            <div className="space-y-3">
+              <h3 className="text-xl font-sans font-medium text-slate-900">
+                No pending approvals
+              </h3>
+              <p className="text-base text-slate-500 leading-relaxed">
+                All properties have been reviewed. New submissions will appear here for approval.
               </p>
             </div>
           </div>
         </div>
       )}
-
-      {/* Admin Statistics */}
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200">
-          <div className="text-sm text-slate-500 mb-2">Total Properties</div>
-          <div className="text-2xl font-semibold text-slate-900">{allProperties.length}</div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-slate-200">
-          <div className="text-sm text-slate-500 mb-2">Published</div>
-          <div className="text-2xl font-semibold text-teal-600">
-            {allProperties.filter(p => p.status === 'Published').length}
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-slate-200">
-          <div className="text-sm text-slate-500 mb-2">Pending Review</div>
-          <div className="text-2xl font-semibold text-yellow-600">
-            {allProperties.filter(p => p.status === 'Pending').length}
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-slate-200">
-          <div className="text-sm text-slate-500 mb-2">Draft</div>
-          <div className="text-2xl font-semibold text-slate-600">
-            {allProperties.filter(p => p.status === 'Draft').length}
-          </div>
-        </div>
-      </div>
     </ContentWrapper>
   )
 }
