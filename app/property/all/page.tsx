@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import ContentWrapper from '@/components/ContentWrapper'
 import CardProperty from '@/components/CardProperty'
-import type { Property } from '@/types/property'
+import type { Property, PropertyTypeBackend } from '@/types/property'
 import { Plus } from 'lucide-react'
 import useAuthStore from '@/stores/authStore'
 
@@ -76,11 +76,7 @@ interface MyPropertiesResponse {
   }
 }
 
-// Extended property type for UI with admin status
-interface PropertyWithStatus extends Property {
-  status: string
-}
-
+// Status utility functions
 function getStatusBadgeClass(status: string): string {
   switch (status) {
     case 'APPROVED':
@@ -116,7 +112,7 @@ function getStatusDisplayName(status: string): string {
 }
 
 // Convert backend property to frontend property format
-function convertBackendProperty(backendProperty: BackendProperty): PropertyWithStatus {
+function convertBackendProperty(backendProperty: BackendProperty): Property {
   return {
     id: backendProperty.id,
     code: backendProperty.code,
@@ -129,7 +125,7 @@ function convertBackendProperty(backendProperty: BackendProperty): PropertyWithS
     country: backendProperty.country,
     price: parseFloat(backendProperty.price),
     currencyCode: backendProperty.currencyCode,
-    type: backendProperty.propertyType.code as 'APARTMENT' | 'HOUSE' | 'CONDO' | 'STUDIO',
+    type: backendProperty.propertyType.code as PropertyTypeBackend,
     bedrooms: backendProperty.bedrooms,
     bathrooms: backendProperty.bathrooms,
     area: backendProperty.areaSqm,
@@ -154,7 +150,7 @@ function convertBackendProperty(backendProperty: BackendProperty): PropertyWithS
 }
 
 function AllMyPropertiesPage() {
-  const [myProperties, setMyProperties] = useState<PropertyWithStatus[]>([])
+  const [myProperties, setMyProperties] = useState<Property[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { isLoggedIn } = useAuthStore()
@@ -299,25 +295,6 @@ function AllMyPropertiesPage() {
             </div>
 
             <CardProperty property={property} />
-
-            {/* Property Management Actions */}
-            <div className="mt-3 flex items-center justify-between">
-              <div className="flex space-x-2">
-                <Link
-                  href={`/property/modify/${property.id}`}
-                  className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
-                >
-                  Edit
-                </Link>
-                <span className="text-slate-300">•</span>
-                <button className="text-sm text-slate-600 hover:text-slate-700 font-medium transition-colors">
-                  View Stats
-                </button>
-              </div>
-              <button className="text-sm text-slate-500 hover:text-slate-600 transition-colors">
-                More
-              </button>
-            </div>
           </div>
         ))}
       </div>
