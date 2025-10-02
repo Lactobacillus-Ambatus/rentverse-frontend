@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import useAuthStore from '@/stores/authStore'
 import ContentWrapper from '@/components/ContentWrapper'
 import { setCookie } from '@/utils/cookies'
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { validateToken } = useAuthStore()
@@ -68,5 +68,24 @@ export default function AuthCallbackPage() {
         </div>
       </div>
     </ContentWrapper>
+  )
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <ContentWrapper>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+            <h2 className="text-xl font-semibold text-slate-900">
+              Loading...
+            </h2>
+          </div>
+        </div>
+      </ContentWrapper>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
   )
 }

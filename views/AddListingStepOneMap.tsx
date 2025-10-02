@@ -10,7 +10,7 @@ import { reverseGeocode, isValidMalaysiaCoordinates, formatCoordinates } from '@
 
 function AddListingStepOneMap() {
   // Store integration
-  const { data, updateData, markStepCompleted, nextStep } = usePropertyListingStore()
+  const { updateData, markStepCompleted, nextStep } = usePropertyListingStore()
   
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedLocation, setSelectedLocation] = useState<LocationBaseType | null>(null)
@@ -179,7 +179,7 @@ function AddListingStepOneMap() {
       setFilteredLocations(popularLocations)
       setShowDropdown(false)
     }
-  }, [searchQuery])
+  }, [searchQuery, popularLocations])
 
   useEffect(() => {
     // Close dropdown when clicking outside

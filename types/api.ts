@@ -13,7 +13,7 @@ export interface ApiError {
   message: string
   status: number
   code?: string
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 }
 
 // Pagination types for API responses
@@ -94,8 +94,10 @@ export interface LoginRequest {
   password: string
 }
 
+import { User } from './auth'
+
 export interface LoginResponse {
-  user: any // Will be typed from auth types
+  user: User
   token: string
   refreshToken?: string
   expiresIn: number
@@ -172,7 +174,7 @@ export interface DeleteRequest {
 
 export interface GetRequest {
   id?: string
-  params?: Record<string, any>
+  params?: Record<string, string | number | boolean>
   options?: ApiRequestOptions
 }
 
@@ -181,7 +183,7 @@ export interface FileUploadRequest {
   file: File
   folder?: string
   filename?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, string | number | boolean>
 }
 
 export interface FileUploadResponse {

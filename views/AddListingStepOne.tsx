@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import React from 'react'
-import { Home, MapPin, FileText } from 'lucide-react'
 
 
 function AddListingStepOne() {

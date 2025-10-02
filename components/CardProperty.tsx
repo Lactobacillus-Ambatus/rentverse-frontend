@@ -60,7 +60,7 @@ function CardProperty({ property }: { readonly property: Property }) {
           {/* Price and Details Row */}
           <div className="flex items-center justify-between">
             {/* Price */}
-            <span className="text-lg sm:text-xl font-bold text-orange-500">{getLocaledPrice(property.price)}</span>
+            <span className="text-lg sm:text-xl font-bold text-orange-500">{getLocaledPrice(Number(property.price))}</span>
 
             {/* Area and Rating */}
             <div className="flex items-center gap-3 sm:gap-4">

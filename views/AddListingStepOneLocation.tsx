@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import { ChevronDown } from 'lucide-react'
 import * as maptilersdk from '@maptiler/sdk'
@@ -33,7 +33,10 @@ function AddListingStepOneLocation() {
   // Data
   const states = getAllStates()
   const districts = selectedState ? getDistrictsByState(selectedState) : []
-  const subdistricts = selectedState && selectedDistrict ? getLocationsByDistrict(selectedState, selectedDistrict) : []
+  const subdistricts = useMemo(() => 
+    selectedState && selectedDistrict ? getLocationsByDistrict(selectedState, selectedDistrict) : [],
+    [selectedState, selectedDistrict]
+  )
 
   // Auto-fill effect when coordinates are available from previous step
   useEffect(() => {
@@ -158,7 +161,7 @@ function AddListingStepOneLocation() {
         map.current = null
       }
     }
-  }, [])
+  }, [mapCenter])
 
   // Update map center when location changes
   useEffect(() => {
