@@ -106,6 +106,8 @@ function AdminPage() {
   const [isLoadingApprovals, setIsLoadingApprovals] = useState(false)
   const [autoReviewEnabled, setAutoReviewEnabled] = useState(false)
   const [isTogglingAutoReview, setIsTogglingAutoReview] = useState(false)
+  const [approvingProperties, setApprovingProperties] = useState<Set<string>>(new Set())
+  const [rejectingProperties, setRejectingProperties] = useState<Set<string>>(new Set())
   const { isLoggedIn } = useAuthStore()
 
   // Check if user is admin
@@ -205,7 +207,7 @@ function AdminPage() {
         const token = localStorage.getItem('authToken')
         if (!token) return
 
-        const response = await fetch('https://rentverse-be.jokoyuliyanto.my.id/api/predictions/status', {
+        const response = await fetch('https://rentverse-be.jokoyuliyanto.my.id/api/properties/auto-approve/status', {
           method: 'GET',
           headers: {
             'accept': 'application/json',
@@ -322,7 +324,7 @@ function AdminPage() {
         throw new Error('Authentication token not found')
       }
 
-      const response = await fetch('https://rentverse-be.jokoyuliyanto.my.id/api/predictions/toggle', {
+      const response = await fetch('https://rentverse-be.jokoyuliyanto.my.id/api/properties/auto-approve/toggle', {
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -350,6 +352,102 @@ function AdminPage() {
       setError(err instanceof Error ? err.message : 'Failed to toggle auto review')
     } finally {
       setIsTogglingAutoReview(false)
+    }
+  }
+
+  // Approve property function
+  const approveProperty = async (propertyId: string) => {
+    try {
+      setApprovingProperties(prev => new Set(prev).add(propertyId))
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        throw new Error('Authentication token not found')
+      }
+
+      const response = await fetch(`https://rentverse-be.jokoyuliyanto.my.id/api/properties/${propertyId}/approve`, {
+        method: 'POST',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notes: 'Approved by admin'
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to approve property: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        // Remove the approved property from pending approvals
+        setPendingApprovals(prev => prev.filter(approval => approval.propertyId !== propertyId))
+        
+        // Show success message (optional)
+        console.log('Property approved successfully:', data.message)
+      } else {
+        throw new Error('Failed to approve property')
+      }
+    } catch (err) {
+      console.error('Error approving property:', err)
+      setError(err instanceof Error ? err.message : 'Failed to approve property')
+    } finally {
+      setApprovingProperties(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(propertyId)
+        return newSet
+      })
+    }
+  }
+
+  // Reject property function
+  const rejectProperty = async (propertyId: string) => {
+    try {
+      setRejectingProperties(prev => new Set(prev).add(propertyId))
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        throw new Error('Authentication token not found')
+      }
+
+      const response = await fetch(`https://rentverse-be.jokoyuliyanto.my.id/api/properties/${propertyId}/reject`, {
+        method: 'POST',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notes: 'Rejected by admin'
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to reject property: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        // Remove the rejected property from pending approvals
+        setPendingApprovals(prev => prev.filter(approval => approval.propertyId !== propertyId))
+        
+        // Show success message (optional)
+        console.log('Property rejected successfully:', data.message)
+      } else {
+        throw new Error('Failed to reject property')
+      }
+    } catch (err) {
+      console.error('Error rejecting property:', err)
+      setError(err instanceof Error ? err.message : 'Failed to reject property')
+    } finally {
+      setRejectingProperties(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(propertyId)
+        return newSet
+      })
     }
   }
 
@@ -577,11 +675,23 @@ function AdminPage() {
                         </button>
                       </div>
                       <div className="flex space-x-3">
-                        <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
-                          Approve
+                        <button 
+                          onClick={() => approveProperty(approval.property.id)}
+                          disabled={approvingProperties.has(approval.property.id)}
+                          className={`px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm ${
+                            approvingProperties.has(approval.property.id) ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          {approvingProperties.has(approval.property.id) ? 'Approving...' : 'Approve'}
                         </button>
-                        <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
-                          Reject
+                        <button 
+                          onClick={() => rejectProperty(approval.property.id)}
+                          disabled={rejectingProperties.has(approval.property.id)}
+                          className={`px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm ${
+                            rejectingProperties.has(approval.property.id) ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          {rejectingProperties.has(approval.property.id) ? 'Rejecting...' : 'Reject'}
                         </button>
                       </div>
                     </div>
