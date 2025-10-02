@@ -44,6 +44,17 @@ function DetailPage() {
     fetchPropertyAndLogView()
   }, [propertyId])
 
+  // Handle favorite change callback
+  const handleFavoriteChange = (isFavorited: boolean, favoriteCount: number) => {
+    if (property) {
+      setProperty(prev => prev ? {
+        ...prev,
+        isFavorited,
+        favoriteCount
+      } : null)
+    }
+  }
+
   // Loading state
   if (isLoading) {
     return (
@@ -89,7 +100,12 @@ function DetailPage() {
 
   return (
     <ContentWrapper>
-      <BarProperty title={property.title} />
+      <BarProperty 
+        title={property.title} 
+        propertyId={property.id}
+        isFavorited={property.isFavorited}
+        onFavoriteChange={handleFavoriteChange}
+      />
 
       <section className="space-y-6">
         <ImageGallery images={displayImages} />
