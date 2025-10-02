@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import clsx from 'clsx'
 import InputEmail from './InputEmail'
 import ButtonFilled from './ButtonFilled'
@@ -11,7 +12,7 @@ interface ModalEmailCheckProps {
   isModal?: boolean
 }
 
-function ModalEmailCheck({ isModal = true }: ModalEmailCheckProps) {
+function ModalEmailCheck({ isModal = true }: Readonly<ModalEmailCheckProps>) {
   const router = useRouter()
   const {
     email,
@@ -29,6 +30,11 @@ function ModalEmailCheck({ isModal = true }: ModalEmailCheckProps) {
     const data = (await submitEmailCheck()) as { exists?: boolean } | undefined
     const exists = Boolean(data?.exists)
     router.push(exists ? '/auth/login' : '/auth/signup')
+  }
+
+  const handleGoogleLogin = () => {
+    // Redirect to Google OAuth endpoint
+    window.location.href = '/api/auth/google'
   }
 
   const containerContent = (
@@ -74,6 +80,28 @@ function ModalEmailCheck({ isModal = true }: ModalEmailCheckProps) {
             {isLoading ? 'Loading...' : 'Continue'}
           </ButtonFilled>
         </form>
+
+        {/* Divider */}
+        <div className="flex items-center my-6">
+          <div className="flex-grow border-t border-slate-200"></div>
+          <span className="px-3 text-sm text-slate-500">or</span>
+          <div className="flex-grow border-t border-slate-200"></div>
+        </div>
+
+        {/* Google Login Button */}
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full flex items-center justify-center px-4 py-3 border border-slate-300 rounded-xl text-slate-700 bg-white hover:bg-slate-50 transition-colors duration-200 font-medium"
+        >
+          <Image
+            src="https://res.cloudinary.com/dqhuvu22u/image/upload/f_webp/v1759432485/rentverse-base/google_tsn5nt.png"
+            alt="Google"
+            width={20}
+            height={20}
+            className="mr-3"
+          />
+          Sign in with Google
+        </button>
       </div>
     </div>
   )
