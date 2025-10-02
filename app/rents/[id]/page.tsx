@@ -6,7 +6,8 @@ import ContentWrapper from '@/components/ContentWrapper'
 import BarProperty from '@/components/BarProperty'
 import ImageGallery from '@/components/ImageGallery'
 import MapViewer from '@/components/MapViewer'
-import { Download, ExternalLink, Calendar, User, MapPin, Home } from 'lucide-react'
+import { Download, Share, Calendar, User, MapPin, Home } from 'lucide-react'
+import { ShareService } from '@/utils/shareService'
 import useAuthStore from '@/stores/authStore'
 
 interface BookingDetail {
@@ -91,6 +92,8 @@ function RentDetailPage({ params }: { readonly params: Promise<{ id: string }> }
   const [booking, setBooking] = useState<BookingDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [documentUrl, setDocumentUrl] = useState<string | null>(null)
   const { isLoggedIn } = useAuthStore()
 
   useEffect(() => {
@@ -175,14 +178,112 @@ function RentDetailPage({ params }: { readonly params: Promise<{ id: string }> }
   // Generate invoice number based on id
   const invoiceNumber = `INV${id.toUpperCase().slice(0, 8)}`
 
-  const handleShareableLink = () => {
-    const url = `${window.location.origin}/rents/${id}`
-    navigator.clipboard.writeText(url)
-    console.log('Shareable link copied to clipboard')
+  const handleShareableLink = async () => {
+    if (!booking) return
+    
+    try {
+      let pdfUrl = documentUrl
+      
+      // If we don't have the document URL yet, fetch it
+      if (!pdfUrl && booking.status.toLowerCase() !== 'pending') {
+        const token = localStorage.getItem('authToken')
+        if (!token) {
+          throw new Error('Authentication token not found')
+        }
+
+        const response = await fetch(`https://rentverse-be.jokoyuliyanto.my.id/api/bookings/${booking.id}/rental-agreement`, {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch rental agreement: ${response.status}`)
+        }
+
+        const data = await response.json()
+        
+        if (data.success && data.data.pdf) {
+          pdfUrl = data.data.pdf.url
+          setDocumentUrl(pdfUrl)
+        } else {
+          throw new Error('Failed to get rental agreement PDF')
+        }
+      }
+      
+      if (!pdfUrl) {
+        alert('Document not available for sharing')
+        return
+      }
+
+      const shareData = {
+        title: `Rental Agreement - ${booking.property.title}`,
+        text: `Rental agreement for ${booking.property.title} in ${booking.property.city}, ${booking.property.state}. Status: ${booking.status}`,
+        url: pdfUrl
+      }
+
+      const success = await ShareService.share(shareData, {
+        showToast: true,
+        fallbackMessage: 'Rental agreement document link copied to clipboard!'
+      })
+      
+      if (success) {
+        console.log('Rental agreement document shared successfully')
+      }
+    } catch (error) {
+      console.error('Error sharing rental agreement document:', error)
+      alert('Failed to share rental agreement document. Please try again.')
+    }
   }
 
-  const handleDownloadDocument = () => {
-    console.log('Downloading agreement document')
+  const handleDownloadDocument = async () => {
+    if (!booking) return
+    
+    try {
+      setIsDownloading(true)
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        throw new Error('Authentication token not found')
+      }
+
+      const response = await fetch(`https://rentverse-be.jokoyuliyanto.my.id/api/bookings/${booking.id}/rental-agreement`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch rental agreement: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.data.pdf) {
+        // Store the document URL for sharing
+        setDocumentUrl(data.data.pdf.url)
+        
+        // Create a temporary link element and trigger download
+        const link = document.createElement('a')
+        link.href = data.data.pdf.url
+        link.download = data.data.pdf.fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        console.log('Rental agreement downloaded successfully')
+      } else {
+        throw new Error('Failed to get rental agreement PDF')
+      }
+    } catch (error) {
+      console.error('Error downloading rental agreement:', error)
+      alert('Failed to download rental agreement. Please try again.')
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   if (!isLoggedIn) {
@@ -362,24 +463,29 @@ function RentDetailPage({ params }: { readonly params: Promise<{ id: string }> }
                   </div>
                 </div>
 
-                {/* Shareable Link */}
+                {/* Share Document */}
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Shareable Link
-                  </label>
+                  <p className="block text-sm font-medium text-slate-700">
+                    Share Document
+                  </p>
                   <div className="flex items-center space-x-2">
                     <input
                       type="text"
-                      value={`rentverse.com/rents/${id}`}
+                      value={documentUrl || (booking.status.toLowerCase() === 'pending' ? 'Document not available' : 'Click share to get document link')}
                       readOnly
                       className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-600"
                     />
                     <button
                       onClick={handleShareableLink}
-                      className="p-2 text-slate-600 hover:text-teal-600 transition-colors"
-                      title="Copy link"
+                      disabled={booking.status.toLowerCase() === 'pending'}
+                      className={`p-2 transition-colors ${
+                        booking.status.toLowerCase() === 'pending'
+                          ? 'text-slate-400 cursor-not-allowed'
+                          : 'text-slate-600 hover:text-teal-600'
+                      }`}
+                      title="Share document"
                     >
-                      <ExternalLink size={16} />
+                      <Share size={16} />
                     </button>
                   </div>
                 </div>
@@ -387,18 +493,20 @@ function RentDetailPage({ params }: { readonly params: Promise<{ id: string }> }
                 {/* Download Agreement */}
                 <button
                   onClick={handleDownloadDocument}
-                  disabled={booking.status.toLowerCase() === 'pending'}
+                  disabled={booking.status.toLowerCase() === 'pending' || isDownloading}
                   className={`w-full flex items-center justify-center space-x-2 font-medium py-3 px-4 rounded-xl transition-colors duration-200 ${
-                    booking.status.toLowerCase() === 'pending'
+                    booking.status.toLowerCase() === 'pending' || isDownloading
                       ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                       : 'bg-teal-600 hover:bg-teal-700 text-white'
                   }`}
                 >
                   <Download size={16} />
                   <span>
-                    {booking.status.toLowerCase() === 'pending' 
-                      ? 'Document not available' 
-                      : 'Download document'
+                    {isDownloading 
+                      ? 'Downloading...'
+                      : booking.status.toLowerCase() === 'pending' 
+                        ? 'Document not available' 
+                        : 'Download document'
                     }
                   </span>
                 </button>

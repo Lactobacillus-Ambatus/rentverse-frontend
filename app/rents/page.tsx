@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import ContentWrapper from '@/components/ContentWrapper'
-import { Search, Calendar, MapPin, User } from 'lucide-react'
+import { Search, Calendar, MapPin, User, Download } from 'lucide-react'
 import useAuthStore from '@/stores/authStore'
 
 interface Booking {
@@ -51,6 +51,7 @@ function RentsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const { isLoggedIn } = useAuthStore()
 
   useEffect(() => {
@@ -97,6 +98,49 @@ function RentsPage() {
 
     fetchBookings()
   }, [isLoggedIn])
+
+  const downloadRentalAgreement = async (bookingId: string) => {
+    try {
+      setDownloadingId(bookingId)
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        throw new Error('Authentication token not found')
+      }
+
+      const response = await fetch(`https://rentverse-be.jokoyuliyanto.my.id/api/bookings/${bookingId}/rental-agreement`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch rental agreement: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.data.pdf) {
+        // Create a temporary link element and trigger download
+        const link = document.createElement('a')
+        link.href = data.data.pdf.url
+        link.download = data.data.pdf.fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        console.log('Rental agreement downloaded successfully')
+      } else {
+        throw new Error('Failed to get rental agreement PDF')
+      }
+    } catch (error) {
+      console.error('Error downloading rental agreement:', error)
+      alert('Failed to download rental agreement. Please try again.')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -275,19 +319,31 @@ function RentsPage() {
                       )}
 
                       {/* Footer */}
-                      <div className="flex justify-between items-end mt-auto">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mt-auto space-y-3 sm:space-y-0">
                         <div>
                           <p className="text-2xl font-bold text-slate-900">
                             {formatAmount(booking.rentAmount, booking.currencyCode)}
                           </p>
                           <p className="text-sm text-slate-500">Total amount</p>
                         </div>
-                        <Link
-                          href={`/property/${booking.property.id}`}
-                          className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm"
-                        >
-                          View Property
-                        </Link>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                          <button
+                            onClick={() => downloadRentalAgreement(booking.id)}
+                            disabled={downloadingId === booking.id}
+                            className="flex items-center justify-center space-x-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                          >
+                            <Download size={16} />
+                            <span>
+                              {downloadingId === booking.id ? 'Downloading...' : 'Download Agreement'}
+                            </span>
+                          </button>
+                          <Link
+                            href={`/rents/${booking.id}`}
+                            className="flex items-center justify-center px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm"
+                          >
+                            View detail
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
