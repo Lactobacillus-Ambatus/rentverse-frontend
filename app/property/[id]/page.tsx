@@ -9,6 +9,7 @@ import ImageGallery from '@/components/ImageGallery'
 import BoxPropertyPrice from '@/components/BoxPropertyPrice'
 import MapViewer from '@/components/MapViewer'
 import { PropertiesApiClient } from '@/utils/propertiesApiClient'
+import { ShareService } from '@/utils/shareService'
 import type { Property } from '@/types/property'
 
 function DetailPage() {
@@ -98,6 +99,15 @@ function DetailPage() {
   // Format price for display
   const displayPrice = typeof property.price === 'string' ? parseFloat(property.price) : property.price
 
+  // Create share data using ShareService
+  const shareData = ShareService.createPropertyShareData({
+    title: property.title,
+    bedrooms: property.bedrooms,
+    city: property.city,
+    state: property.state,
+    price: property.price
+  })
+
   return (
     <ContentWrapper>
       <BarProperty 
@@ -105,6 +115,8 @@ function DetailPage() {
         propertyId={property.id}
         isFavorited={property.isFavorited}
         onFavoriteChange={handleFavoriteChange}
+        shareUrl={shareData.url}
+        shareText={shareData.text}
       />
 
       <section className="space-y-6">

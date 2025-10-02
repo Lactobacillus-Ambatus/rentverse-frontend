@@ -5,6 +5,7 @@ import { useState } from 'react'
 import ButtonCircle from '@/components/ButtonCircle'
 import { ArrowLeft, Share, Heart } from 'lucide-react'
 import { FavoritesApiClient } from '@/utils/favoritesApiClient'
+import { ShareService } from '@/utils/shareService'
 import useAuthStore from '@/stores/authStore'
 import clsx from 'clsx'
 
@@ -13,6 +14,8 @@ interface BarPropertyProps {
   propertyId?: string
   isFavorited?: boolean
   onFavoriteChange?: (isFavorited: boolean, favoriteCount: number) => void
+  shareUrl?: string
+  shareText?: string
 }
 
 function BarProperty(props: Readonly<BarPropertyProps>) {
@@ -54,6 +57,27 @@ function BarProperty(props: Readonly<BarPropertyProps>) {
     }
   }
 
+  const handleShare = async () => {
+    const shareData = {
+      title: props.title || 'Check out this property',
+      text: props.shareText || `Check out this amazing property: ${props.title}`,
+      url: props.shareUrl || (typeof window !== 'undefined' ? window.location.href : ''),
+    }
+
+    try {
+      const success = await ShareService.share(shareData, {
+        showToast: true,
+        fallbackMessage: 'Property link copied to clipboard!'
+      })
+      
+      if (success) {
+        console.log('Property shared successfully')
+      }
+    } catch (error) {
+      console.error('Error sharing property:', error)
+    }
+  }
+
   return (
     <div className="w-full max-w-7xl mx-auto flex items-center justify-between p-4 bg-white border-b border-gray-100">
       {/* Left side - Back button and title */}
@@ -66,10 +90,13 @@ function BarProperty(props: Readonly<BarPropertyProps>) {
 
       {/* Right side - Share and Favourites buttons */}
       <div className="flex items-center space-x-4">
-        <button className={clsx([
-          'flex items-center space-x-2 text-gray-600 cursor-pointer',
-          'hover:underline hover:text-gray-900 transition-colors',
-        ])}>
+        <button 
+          onClick={handleShare}
+          className={clsx([
+            'flex items-center space-x-2 text-gray-600 cursor-pointer',
+            'hover:underline hover:text-gray-900 transition-colors',
+          ])}
+        >
           <Share size={14} />
           <span className="text-sm font-medium">Share</span>
         </button>
