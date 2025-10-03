@@ -38,6 +38,8 @@ export function mapPropertyDataToAIRequest(data: PropertyListingData): PriceReco
   }
 }
 
+import { createAiServiceApiUrl } from './apiConfig'
+
 /**
  * Get AI-powered price recommendation for a property
  */
@@ -45,7 +47,7 @@ export async function getPriceRecommendation(
   propertyData: PriceRecommendationRequest
 ): Promise<PriceRecommendationResponse> {
   try {
-    const response = await fetch('http://rentverse-ai.jokoyuliyanto.my.id/api/v1/classify/price', {
+    const response = await fetch(createAiServiceApiUrl('classify/price'), {
       method: 'POST',
       headers: {
         'accept': 'application/json',

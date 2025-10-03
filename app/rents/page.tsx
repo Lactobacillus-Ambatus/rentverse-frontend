@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import ContentWrapper from '@/components/ContentWrapper'
 import { Search, Calendar, MapPin, User, Download } from 'lucide-react'
 import useAuthStore from '@/stores/authStore'
+import { createApiUrl } from '@/utils/apiConfig'
 
 interface Booking {
   id: string
@@ -107,7 +108,7 @@ function RentsPage() {
         throw new Error('Authentication token not found')
       }
 
-      const response = await fetch(`https://rentverse-be.jokoyuliyanto.my.id/api/bookings/${bookingId}/rental-agreement`, {
+      const response = await fetch(createApiUrl(`bookings/${bookingId}/rental-agreement`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',

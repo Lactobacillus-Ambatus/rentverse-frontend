@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import ContentWrapper from '@/components/ContentWrapper'
 import { Plus, Filter, Clock, RefreshCw, Bot } from 'lucide-react'
 import useAuthStore from '@/stores/authStore'
+import { createApiUrl } from '@/utils/apiConfig'
 
 // Extended property type for UI with admin status
 interface PropertyApproval {
@@ -168,7 +169,7 @@ function AdminPage() {
           throw new Error('Authentication token not found')
         }
 
-        const response = await fetch('https://rentverse-be.jokoyuliyanto.my.id/api/properties/pending-approval', {
+        const response = await fetch(createApiUrl('properties/pending-approval'), {
           method: 'GET',
           headers: {
             'accept': '*/*',
@@ -207,7 +208,7 @@ function AdminPage() {
         const token = localStorage.getItem('authToken')
         if (!token) return
 
-        const response = await fetch('https://rentverse-be.jokoyuliyanto.my.id/api/properties/auto-approve/status', {
+        const response = await fetch(createApiUrl('properties/auto-approve/status'), {
           method: 'GET',
           headers: {
             'accept': 'application/json',
@@ -324,7 +325,7 @@ function AdminPage() {
         throw new Error('Authentication token not found')
       }
 
-      const response = await fetch('https://rentverse-be.jokoyuliyanto.my.id/api/properties/auto-approve/toggle', {
+      const response = await fetch(createApiUrl('properties/auto-approve/toggle'), {
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -364,7 +365,7 @@ function AdminPage() {
         throw new Error('Authentication token not found')
       }
 
-      const response = await fetch(`https://rentverse-be.jokoyuliyanto.my.id/api/properties/${propertyId}/approve`, {
+      const response = await fetch(createApiUrl(`properties/${propertyId}/approve`), {
         method: 'POST',
         headers: {
           'accept': '*/*',
@@ -412,7 +413,7 @@ function AdminPage() {
         throw new Error('Authentication token not found')
       }
 
-      const response = await fetch(`https://rentverse-be.jokoyuliyanto.my.id/api/properties/${propertyId}/reject`, {
+      const response = await fetch(createApiUrl(`properties/${propertyId}/reject`), {
         method: 'POST',
         headers: {
           'accept': '*/*',

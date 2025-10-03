@@ -9,6 +9,7 @@ import MapViewer from '@/components/MapViewer'
 import { Download, Share, Calendar, User, MapPin, Home } from 'lucide-react'
 import { ShareService } from '@/utils/shareService'
 import useAuthStore from '@/stores/authStore'
+import { createApiUrl } from '@/utils/apiConfig'
 
 interface BookingDetail {
   id: string
@@ -191,7 +192,7 @@ function RentDetailPage({ params }: { readonly params: Promise<{ id: string }> }
           throw new Error('Authentication token not found')
         }
 
-        const response = await fetch(`https://rentverse-be.jokoyuliyanto.my.id/api/bookings/${booking.id}/rental-agreement`, {
+        const response = await fetch(createApiUrl(`bookings/${booking.id}/rental-agreement`), {
           method: 'GET',
           headers: {
             'accept': 'application/json',
@@ -248,7 +249,7 @@ function RentDetailPage({ params }: { readonly params: Promise<{ id: string }> }
         throw new Error('Authentication token not found')
       }
 
-      const response = await fetch(`https://rentverse-be.jokoyuliyanto.my.id/api/bookings/${booking.id}/rental-agreement`, {
+      const response = await fetch(createApiUrl(`bookings/${booking.id}/rental-agreement`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',

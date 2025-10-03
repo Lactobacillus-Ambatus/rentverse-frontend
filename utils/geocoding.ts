@@ -1,5 +1,6 @@
 // Geocoding utilities for converting coordinates to address components
 import { getAllStates, getDistrictsByState, getLocationsByDistrict } from '@/data/locations'
+import { createMapTilerApiUrl } from './apiConfig'
 
 export interface AddressComponents {
   district: string
@@ -94,7 +95,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<GeocodeR
       const apiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY
       if (apiKey) {
         const response = await fetch(
-          `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${apiKey}&language=en`
+          createMapTilerApiUrl(`geocoding/${lng},${lat}.json?key=${apiKey}&language=en`)
         )
         
         if (response.ok) {

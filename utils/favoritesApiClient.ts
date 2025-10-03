@@ -1,6 +1,7 @@
 import type { Property } from '@/types/property'
+import { getApiUrl } from './apiConfig'
 
-const BASE_URL = 'https://rentverse-be.jokoyuliyanto.my.id/api'
+const BASE_URL = getApiUrl()
 
 // Backend response property structure
 interface BackendProperty {

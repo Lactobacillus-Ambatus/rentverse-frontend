@@ -192,14 +192,23 @@ Before you begin, ensure you have the following installed:
    Create a `.env.local` file in the root directory:
    ```env
    # Backend API Configuration
-   NEXT_PUBLIC_API_URL=http://localhost:8000
+   NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+   
+   # AI Service Configuration (optional)
+   NEXT_PUBLIC_AI_SERVICE_URL=http://localhost:8001
    
    # MapTiler Configuration
    NEXT_PUBLIC_MAPTILER_API_KEY=your_maptiler_api_key_here
    
+   # Cloudinary Configuration
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+   NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
+   
    # Optional: Additional Configuration
    NEXT_PUBLIC_APP_ENV=development
    ```
+
+   **Note**: Copy `.env.example` to `.env.local` and update the values according to your environment.
 
 4. **Start Development Server**
    ```bash

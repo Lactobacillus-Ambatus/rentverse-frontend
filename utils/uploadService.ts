@@ -70,6 +70,8 @@ export interface UploadResponse {
   data: UploadResult[]
 }
 
+import { createCloudinaryUploadUrl } from './apiConfig'
+
 export interface UploadProgress {
   file: File
   progress: number
@@ -79,8 +81,8 @@ export interface UploadProgress {
 }
 
 // Cloudinary configuration
-const CLOUDINARY_CLOUD_NAME = 'dqhuvu22u'
-const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dqhuvu22u'
+const CLOUDINARY_API_URL = createCloudinaryUploadUrl('image')
 
 /**
  * Upload a single image to Cloudinary with fallback options
